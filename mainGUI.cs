@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 
 public class mainGUI : MonoBehaviour {
 	public const int MIN_SIZE = 5;
+	public const int PEG_RANGE = 5;
 	public UnityEngine.UI.Slider difficultySlider;
 	public UnityEngine.UI.Dropdown adapterDropdown;
 	public UnityEngine.UI.Dropdown neighborDropdown;
@@ -111,7 +112,7 @@ public class mainGUI : MonoBehaviour {
 		}
 		aspLogicRules += string.Format("linked({0},{0}).",
 		                               (int) difficultySlider.value + MIN_SIZE);
-		aspLogicRules += "linked(X,Y) :- parent(X, Y, DX, DY), linked(X + DX, Y + DY).";
+		aspLogicRules += "linked(X,Y) :- neighbor(X, Y, DX, DY), linked(X + DX, Y + DY), not linked(X,Y).";
         aspLogicRules += ":- dim(X), dim(Y), not linked(X, Y).";
 
 		return aspLogicRules;
@@ -124,6 +125,7 @@ public class mainGUI : MonoBehaviour {
 		                ((int) difficulty + MIN_SIZE);
 
 		// Add the rules for NEIGHBORS
+		// Example clyngor Output: tuple ('neighbor', (1, 4, 0, -1))
 		switch((int) neighborDropdown.value) {
 			case 0:
 				rules += minNeighbors;
@@ -146,30 +148,38 @@ public class mainGUI : MonoBehaviour {
 				rules += "8";
 				break;
 			default:
-				rules += "#const dim = 5.";
+				rules += "4 {neighbor(X,Y,0,-1); neighbor(X,Y,0,1);";
+				rules += " neighbor(X,Y,1,-1); neighbor(X,Y,1,1)} 4";
 				break;
 		}
-		// If not neighbors already
 	    rules += " :- dim(X), dim(Y).";
-		// Establish neighborhood going opposite direction
+		// Being a neighbor is established both ways 
 		rules += "neighbor(X+DX,Y+DY,DX-DX-DX,DY-DY-DY) :- neighbor(X,Y,DX,DY).";
 
-		// TODO - Add the rules for # OF PEGS; !!!these rules are incorrect!!!
+		// Add the rules for # OF PEGS
+		// Example: 10 { peg(A,B) : linked(A,B), (A,B) != (<mid>, <mid>) } 15.
+		//    For every linked point, place between 10 and 15 pegs, inclusive,
+		//    where no peg sits in point (<mid>, <mid>)
+		// Example clyngor output: tuple ('peg', (1,4))
 		switch((int) pegDropdown.value) {
 			case 0:
-				rules += boardSize + " { peg(X,Y) } " + boardSize;
+				rules += (boardSize - 1) + " { peg(A,B) :";
+				rules += string.Format(" linked(A,B), (A,B) != ({0},{0})} {1}.",
+				                       mid, boardSize - 1);
 				break;
 			// Put rules for all pegs to be filled except one
 			case 1:
-				rules += (boardSize - 1) * 0.1 * (difficulty + 1);
-				rules += " { peg(X,Y) } " + boardSize;
+			    int numPegs = (int) ((boardSize - 1) * 0.1 * (difficulty + 1));
+				rules += numPegs + " { peg(A,B) : linked(A,B), (A,B) } ";
+				rules += string.Format("(A,B) != ({0},{0}) } {1}.",
+				                       mid, numPegs + PEG_RANGE);
 				break;
 			default:
-				rules += "";
+				rules += (boardSize - 1) + " { peg(A,B) :";
+				rules += string.Format(" linked(A,B), (A,B) != ({0},{0})} {1}.",
+				                       mid, boardSize - 1);
 				break;
 		}
-	    rules += " :- dim(X), dim(Y), (X,Y) != ";
-		rules += string.Format("({0},{1}). ", mid, mid);
 		return rules;
 	}
 
