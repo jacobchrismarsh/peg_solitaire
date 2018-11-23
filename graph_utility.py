@@ -11,6 +11,7 @@ http://interactivepython.org/courselib/static/pythonds/Graphs/Implementation.htm
 class Vertex:
     def __init__(self, key):
         self.id = key
+        self.hasPeg = True
         self.connectedTo = {}
 
     def addNeighbor(self, nbr, weight=0):
