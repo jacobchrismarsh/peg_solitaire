@@ -190,9 +190,7 @@ def a_star_solve(board: PegSolitaire) -> bool:
             # Congrats! You found a board that can be solved!
             if curr_board.pegs_remaining() == 1:
                 return True
-            else:
-                # print(curr_board.pegs_remaining())
-                continue
+            continue
 
         # Do every possible move, and add each new board back into the PriorityQueue
         for move in moves:
