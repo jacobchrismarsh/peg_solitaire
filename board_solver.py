@@ -1,10 +1,7 @@
 """
-graphy_utility has all utility classes for making the peg solitaire game boards.
+board_solver has all utility classes for making the peg solitaire game boards.
 
 By: Spencer Chang, Jacob Marshall
-
-The following baseline for the following code was found at
-http://interactivepython.org/courselib/static/pythonds/Graphs/Implementation.html
 """
 
 import sys
@@ -12,13 +9,14 @@ from pprint import pprint, pformat
 from queue import PriorityQueue
 from typing import FrozenSet, List, Tuple
 
-PEG = '*'
-HOLE = 'O'
+PEG = "*"
+HOLE = "O"
 WALL = "█"
 
 # Define new types for this file
 BoardSet = FrozenSet[Tuple[str, Tuple[int, int]]]
 CompleteBoard = List[List[str]]
+
 
 class PegSolitaire:
     def __init__(self, instructions: BoardSet, finished_board: CompleteBoard = None):
@@ -39,7 +37,7 @@ class PegSolitaire:
 
             # Create a width*height board full of holes (O)
             for i in range(height):
-                board.append([HOLE] * width)
+                board.append([WALL] * width)
 
             # Add all the pegs and walls to the board
             for item in instructions:
@@ -49,6 +47,12 @@ class PegSolitaire:
                 elif item[0] == "peg":
                     x, y = item[1][0] - 1, item[1][1] - 1
                     board[x][y] = PEG
+                elif item[0] == "linked":
+                    x, y = item[1][0] - 1, item[1][1] - 1
+                    if board[x][y] != PEG:
+                        board[x][y] = HOLE
+                else:
+                    print(item[0])
 
             self.width = width - 1
             self.height = height - 1
@@ -61,6 +65,7 @@ class PegSolitaire:
     # These two functions allow you to index this object, i.e. PegSolitaire[0][1]
     def __getitem__(self, key: int) -> List[str]:
         return self.board[key]
+
     def __iter__(self):
         return self.board
 
@@ -87,14 +92,14 @@ class PegSolitaire:
         self.board[x2][y2] = PEG
 
         # Find out which peg you have to remove
-        if x1 < x2: # Remove peg from above hole
-            self.board[x2-1][y2] = HOLE
-        elif x1 > x2: # Remove peg from below hole
-            self.board[x2+1][y2] = HOLE
-        elif y1 < y2: # Remove peg from left of hole
-            self.board[x2][y2-1] = HOLE
-        elif y1 > y2: # Remove peg from right of hole
-            self.board[x2][y2+1] = HOLE
+        if x1 < x2:  # Remove peg from above hole
+            self.board[x2 - 1][y2] = HOLE
+        elif x1 > x2:  # Remove peg from below hole
+            self.board[x2 + 1][y2] = HOLE
+        elif y1 < y2:  # Remove peg from left of hole
+            self.board[x2][y2 - 1] = HOLE
+        elif y1 > y2:  # Remove peg from right of hole
+            self.board[x2][y2 + 1] = HOLE
 
         # Remove old peg from its former position
         self.board[x1][y1] = HOLE
@@ -143,31 +148,33 @@ class PegSolitaire:
     def _find_moves_around_hole(self, x: int, y: int) -> int:
         moves = []
 
-        if y <= (self.width - 2): # Check pins to the right
-            if self.board[x][y+1] == PEG and self.board[x][y+2] == PEG:
-                moves.append((x, y+2, x, y))
-        if y >= 2: # Check pins to the left
-            if self.board[x][y-1] == PEG and self.board[x][y-2] == PEG:
-                moves.append((x, y-2, x, y))
-        if x >= 2: # Check pins above
-            if self.board[x-1][y] == PEG and self.board[x-2][y] == PEG:
-                moves.append((x-2, y, x, y))
-        if x <= (self.height - 2): # Check pins below
-            if self.board[x+1][y] == PEG and self.board[x+2][y] == PEG:
-                moves.append((x+2, y, x, y))
+        if y <= (self.width - 2):  # Check pins to the right
+            if self.board[x][y + 1] == PEG and self.board[x][y + 2] == PEG:
+                moves.append((x, y + 2, x, y))
+        if y >= 2:  # Check pins to the left
+            if self.board[x][y - 1] == PEG and self.board[x][y - 2] == PEG:
+                moves.append((x, y - 2, x, y))
+        if x >= 2:  # Check pins above
+            if self.board[x - 1][y] == PEG and self.board[x - 2][y] == PEG:
+                moves.append((x - 2, y, x, y))
+        if x <= (self.height - 2):  # Check pins below
+            if self.board[x + 1][y] == PEG and self.board[x + 2][y] == PEG:
+                moves.append((x + 2, y, x, y))
         return moves
+
 
 def process_frozen_sets(input_file: str) -> BoardSet:
     boards = []
 
     with open(input_file) as f:
-        lines = f.readlines()[0::2] # Grab every other line from start to EOF
+        lines = f.readlines()[0::2]  # Grab every other line from start to EOF
 
         # Go through each string and convert it to a frozenset
         for line in lines:
             boards.append(eval(line))
 
     return boards
+
 
 def a_star_solve(board: PegSolitaire) -> bool:
     board_queue = PriorityQueue()
@@ -203,15 +210,16 @@ def a_star_solve(board: PegSolitaire) -> bool:
 
     return False
 
+
 def main():
     fzs = process_frozen_sets(sys.argv[1])
     boards = []
-    for fz in fzs:
-        boards.append(PegSolitaire(fz))
+    # for fz in fzs:
+    boards.append(PegSolitaire(fzs[0]))
 
-    print(a_star_solve(boards[0]))
+    print(boards[0])
+    # print(a_star_solve(boards[0]))
+
 
 if __name__ == "__main__":
     main()
-
-
