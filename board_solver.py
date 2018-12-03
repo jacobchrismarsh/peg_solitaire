@@ -5,6 +5,7 @@ By: Spencer Chang, Jacob Marshall
 """
 
 import sys
+import time
 from pprint import pprint, pformat
 from queue import PriorityQueue
 from typing import FrozenSet, List, Tuple
@@ -51,8 +52,8 @@ class PegSolitaire:
                     x, y = item[1][0] - 1, item[1][1] - 1
                     if board[x][y] != PEG:
                         board[x][y] = HOLE
-                else:
-                    print(item[0])
+                # else:
+                #     print(item[0])
 
             self.width = width - 1
             self.height = height - 1
@@ -74,6 +75,9 @@ class PegSolitaire:
         return pformat(self.board)
 
     def __lt__(self, other):
+        # first = self.pegs_remaining() + len(self.total_moves())
+        # second = other.pegs_remaining() + len(other.total_moves())
+        # return first < second
         return self.pegs_remaining() < other.pegs_remaining()
 
     def __eq__(self, other):
@@ -182,8 +186,14 @@ def a_star_solve(board: PegSolitaire) -> bool:
 
     board_queue.put(board)
 
+    start = time.time()
+
     # While the queue is not empty
     while not board_queue.empty():
+        end = time.time()
+
+        if end-start > 12:
+            return False
 
         # Get a board and all its available moves.
         curr_board = board_queue.get()
@@ -214,11 +224,22 @@ def a_star_solve(board: PegSolitaire) -> bool:
 def main():
     fzs = process_frozen_sets(sys.argv[1])
     boards = []
-    # for fz in fzs:
-    boards.append(PegSolitaire(fzs[0]))
+    for i, fz in enumerate(fzs):
+        boards.append(PegSolitaire(fz))
 
-    print(boards[0])
-    # print(a_star_solve(boards[0]))
+
+    solvable = []
+    # f = open("successfull_boards", "w")
+    for i, board in enumerate(boards[:10]):
+        print("Board {}".format(i))
+        if a_star_solve(board) == True:
+            print("Board {} is solvable!".format(i))
+            # f.write(str(fzs[i]) + "\n")
+            solvable.append(i)
+
+    print(solvable)
+    print("Total solvable puzzles: {}".format(len(solvable)))
+
 
 
 if __name__ == "__main__":
