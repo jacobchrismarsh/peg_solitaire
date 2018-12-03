@@ -70,8 +70,9 @@ public class mainGUI : MonoBehaviour {
 			using (StreamReader reader = process.StandardError) {
 				string result = reader.ReadToEnd();
 				UnityEngine.Debug.Log(result);
+				// Here is probably where we can put the ASCII boards into a array or simply let them sit in STDIN
+				//    until they are read out of STDIN
 			}
-
 		}
 	}
 
@@ -83,7 +84,7 @@ public class mainGUI : MonoBehaviour {
 		string aspLogicRules = string.Format("#const width = {0}.",
 		                                     (int) sizeDropdown.value + MIN_SIZE);
 		int totalArea = 0;
-		
+	
 		aspLogicRules += "dim(1..width).";
 		aspLogicRules += "size(width,width).";
 
@@ -93,10 +94,11 @@ public class mainGUI : MonoBehaviour {
 
 		// How many pegs are requested?
 		aspLogicRules += difficultyUI((int) difficultySlider.value, (int) adapterDropdown.value, totalArea - 1);
-		aspLogicRules += string.Format("linked({0},{0}).", (int) Mathf.Ceil((sizeDropdown.value + MIN_SIZE) / 2));
+		aspLogicRules += string.Format("linked({0},{0}).", (int) Mathf.Ceil(((float) sizeDropdown.value + MIN_SIZE) / 2));
 		aspLogicRules += "linked(X,Y) :- dim(X), dim(Y), DX=(-1..1), DY=(-1..1), (DX, DY) != (-1;1,-1;1), linked(X+DX,Y+DY), not out(X,Y).";
 		
-		// Get rid of any possibilities where the ASP does not link squares
+		// Get rid of any possibilities where the ASP does not link squares or where they are most likely unsolvable
+		aspLogicRules += solvabilityRules();
 		aspLogicRules += "unlinked(X,Y) :- dim(X), dim(Y), not out(X,Y), not linked(X,Y).";
         aspLogicRules += ":- dim(X), dim(Y), unlinked(X,Y).";
 
@@ -111,13 +113,37 @@ public class mainGUI : MonoBehaviour {
 		return aspLogicRules;
 	}
 
+	/*
+	 * Stated predicates and integrity constraints to help in the solvability of the peg puzzle boards
+	 * ...it also may decrease the search space of the ASP board generation
+	 */
+	string solvabilityRules() {
+		string rules = "";
+		rules = "noneighbor(X,Y,N) :- peg(X,Y), N = #count {neighbor(A,B) : (A,B)=(X+1,Y;;X,Y+1;;X-1,Y;;X,Y-1), peg(A,B), peg(X,Y)}, dim(X), dim(Y).";
+		rules += "x(X,Y) :- (X,Y) = #min { (A,B) : dim(A), dim(B), linked(A,B) }.";
+		rules += "y(X,Y) :- dim(X), dim(Y), x(X-1,Y;;X,Y-1), linked(X,Y).";
+		rules += "z(X,Y) :- dim(X), dim(Y), y(X-1,Y;;X,Y-1), linked(X,Y).";
+		rules += "x(X,Y) :- dim(X), dim(Y), z(X-1,Y;;X,Y-1), linked(X,Y).";
+		rules += "y(X,Y) :- dim(X), dim(Y), z(X+1,Y;;X,Y+1), linked(X,Y).";
+		rules += "z(X,Y) :- dim(X), dim(Y), x(X+1,Y;;X,Y+1), linked(X,Y).";
+		rules += "x(X,Y) :- dim(X), dim(Y), y(X+1,Y;;X,Y+1), linked(X,Y).";
+		rules += "xcount(N) :- N = #count { x(X,Y) : dim(X), dim(Y), peg(X,Y), x(X,Y) }.";
+		rules += "ycount(N) :- N = #count { y(X,Y) : dim(X), dim(Y), peg(X,Y), y(X,Y) }.";
+		rules += "zcount(N) :- N = #count { z(X,Y) : dim(X), dim(Y), peg(X,Y), z(X,Y) }.";
+		rules += "nosoln(1) :- A == B, B == C, xcount(A), ycount(B), zcount(C).";
+		rules += "nosoln(5) :- A == 0, B == 0, C == 0, xcount(A), ycount(B), zcount(C).";
+		rules += ":- dim(X), dim(Y), noneighbor(X,Y,0).";
+		rules += ":- nosoln(1).";
+		return rules;
+	}
+
     string difficultyUI(int difficulty, int adapt, int maxPegs) {
 		string rules = "";
 		int mid = (int) Mathf.Ceil(((float) sizeDropdown.value + MIN_SIZE) / 2);
 
 		// Determine the number of pegs allowed through the shape-established areas
 		rules += string.Format("diffoffset(A) :- A = AR * (3 + {0}) * 15 / 100, area(AR).", difficulty);
-		rules += "numpegs(A) :- A = #min { AR - 1, OFFS}, area(AR), diffoffset(OFFS).";
+		rules += "numpegs(A) :- A = #min { AR - 1; OFFS}, area(AR), diffoffset(OFFS).";
 
 		// Are we changing difficulty or not?
 		if (adapt == 0 || adapt == 1) {
@@ -129,17 +155,17 @@ public class mainGUI : MonoBehaviour {
 
 		// Do we increase or decrease the difficulty?
 		if (adapt == 0) {
-			rules += "pegadapt(A) :- A = -1 * AR * 5 / 100, area(AR).";
+			rules += "pegadapt(A) :- A = -1 * AR * 10 / 100, area(AR).";
 		}
 		else if (adapt == 1) {
-			rules += "pegadapt(A) :- A = AR * 5 / 100, area(AR).";
+			rules += "pegadapt(A) :- A = AR * 10 / 100, area(AR).";
 		}
 		else {
 			rules += "pegadapt(0).";
 		}
 
 		// Add the rules for # OF PEGS
-		rules += string.Format("N + P * C {{ peg(A,B) : dim(A), dim(B), not out(A,B), (A,B) != ({0},{0}) }} END-1", mid);
+		rules += "N + P * C { peg(A,B) : dim(A), dim(B), not out(A,B) } END-1";
 		rules += " :- pegadaptrange(P), pegadapt(C), numpegs(N), area(END).";
 		return rules;
 	}
@@ -159,6 +185,7 @@ public class mainGUI : MonoBehaviour {
 
 			// Square Ears - digs into the middle of the board from the outside edge
 			case 1:
+				rules += "ears.";
 				tempDict = genEars(width);
 				area = retrieveAreaFromDict(tempDict);
 				rules += retrieveRulesFromDict(tempDict);
@@ -167,6 +194,7 @@ public class mainGUI : MonoBehaviour {
 			// Rectangle shape, take away rows at a time
 			// Req: 3+ width or length for rows or columns respectively
 			case 2:
+				rules += "rect.";
 				tempDict = genRect(width);
 				area = retrieveAreaFromDict(tempDict);
 				rules += retrieveRulesFromDict(tempDict);
@@ -174,6 +202,7 @@ public class mainGUI : MonoBehaviour {
 
 			// Cross shape, take away squares of the grid
 			case 3:
+				rules += "cross.";
 				tempDict = genCross(width);
 				area = retrieveAreaFromDict(tempDict);
 				rules += retrieveRulesFromDict(tempDict);
@@ -181,6 +210,7 @@ public class mainGUI : MonoBehaviour {
 			
 			// Generate H-letters
 			case 4:
+				rules += "hshape.";
 				tempDict = genHshape(width);
 				area = retrieveAreaFromDict(tempDict);
 				rules += retrieveRulesFromDict(tempDict);
@@ -188,6 +218,7 @@ public class mainGUI : MonoBehaviour {
 
 			// Corners have random area from 0 to however much is allowed given MIN_WIDTH
 			case 5:
+				rules += "corner.";
 				tempDict = genCorner(width);
 				area = retrieveAreaFromDict(tempDict);
 				rules += retrieveRulesFromDict(tempDict);
@@ -241,18 +272,18 @@ public class mainGUI : MonoBehaviour {
 		int area = width * width;
 		// int mid = (int) Mathf.Ceil((float) sizeDropdown.value / 2);
 		Dictionary<int, string> tempDict = new Dictionary<int, string>();
-		int deepIdx = (int) (UnityEngine.Random.value * 2) + 1;
+		// int deepIdx = (int) (UnityEngine.Random.value * 2) + 1;
+		int deepIdx = 1;
 		int wideIdx1 = deepIdx + MIN_WIDTH;
 		int wideIdx2 = width - (deepIdx - 1) - MIN_WIDTH;
 
-		rules += "ears.";
 		rules += string.Format("eardeeprange(1..{0};{1}..width).", deepIdx, width - (deepIdx - 1));
 		rules += string.Format("earwiderange({0}..{1}).", wideIdx1, wideIdx2);
 		rules += "out(X,Y) :- ears, eardeeprange(X), earwiderange(Y).";
 		rules += "out(X,Y) :- ears, eardeeprange(Y), earwiderange(X).";
-		rules += string.Format("earsarea({0}) :- ears.", area);
 
-		area -= 4 * (deepIdx * (wideIdx2 - wideIdx1));
+		area -= 4 * (deepIdx * (1 + wideIdx2 - wideIdx1));
+		rules += string.Format("earsarea({0}) :- ears.", area);
 		tempDict.Add(area, rules);
 		return tempDict;
 	}
@@ -269,7 +300,6 @@ public class mainGUI : MonoBehaviour {
 		int firstIdx = (int) UnityEngine.Random.value * (width / 2 - 2) + 1;
 		int secondIdx = (width + 1) - (int) (UnityEngine.Random.value * (width - firstIdx - MIN_WIDTH - 1));
 
-		rules += "rect.";
 		rules += "1 { rectshape(1;2) } 1 :- rect.";
 		rules += string.Format("out(X,Y) :- rectshape(1), dim(X), Y = (1..{0}; {1}..{2}).", firstIdx, secondIdx, width);
 		rules += string.Format("out(X,Y) :- rectshape(2), dim(Y), X = (1..{0}; {1}..{2}).", firstIdx, secondIdx, width);
@@ -291,7 +321,6 @@ public class mainGUI : MonoBehaviour {
 		int rnd = (int) (UnityEngine.Random.value * (width / 2)) + 1;
 		int rnd_end = (int) (UnityEngine.Random.value * (width - rnd - MIN_WIDTH));
 
-		rules += "cross.";
 		rules += string.Format("range(1..{0}; {1}..{2}).", rnd, width - rnd_end, width);
 		rules += "out(X,Y) :- cross, range(X), range(Y).";
 		area -= (rnd * rnd) + 2 * (rnd * (rnd_end + 1)) + ((rnd_end + 1) * (rnd_end + 1));
@@ -311,7 +340,6 @@ public class mainGUI : MonoBehaviour {
 		Dictionary<int, string> tempDict = new Dictionary<int, string>();
 		//int mid = (int) Mathf.Ceil((float) width / 2);
 
-		rules += "hshape.";
 		rules += "1 { hside(1;2) } 1 :- hshape.";
 		rules += string.Format("hxrange({0}..{1};{2}..{3}).", 1, (int) ((width - MIN_WIDTH) / 2),
 			                   width - (int) ((width - MIN_WIDTH) / 2) + 1, width);
@@ -355,7 +383,6 @@ public class mainGUI : MonoBehaviour {
 							(width - rnd_y - MIN_WIDTH));
 		// Make the ASP rules for the ASP solver
 
-		rules += "corner.";
 		rules += string.Format("randxrange(1..{0}; {1}..{2}).",
 								rnd_x, width - rnd_x_end + 1, width);
 		rules += string.Format("randyrange(1..{0}; {1}..{2}).",
@@ -378,23 +405,5 @@ public class mainGUI : MonoBehaviour {
 		string[] rules = new string[1];
 		shapeDict.Values.CopyTo(rules, 0);
 		return rules[0];
-	}
-
-	string pegBoardSolver() {
-		/*
-		Copy the Rogo puzzle solver idea by having a set of "moves" where
-		the set is filled by "hop" atoms that specify two pairs of coord's, the
-		hopping peg and the hopped peg.
-
-		Some problems: How do we dynamically know what spaces have pegs or not?
-		State held by: board[i,j,t], where coordinates (i,j) hold a 0/1 value
-			at time t and tell whether a peg exists there or not.
-		Move Prereq: Two consecutive pegs and one gap all in a row
-		Move Effect: One peg and two gaps all in a row
-		Win Condition: No moves available and One peg left
-		Lose Condition: No moves available and more than one peg left
-		Number of moves till solution: n_pegs - 1
-		 */
-		return "";
 	}
 }
