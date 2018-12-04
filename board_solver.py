@@ -4,20 +4,45 @@ board_solver has all utility classes for making the peg solitaire game boards.
 By: Spencer Chang, Jacob Marshall
 """
 
+import os
 import sys
+import termios
 import time
+import tty
 from pprint import pprint, pformat
 from queue import PriorityQueue
+from termcolor import cprint
 from typing import FrozenSet, List, Tuple
+
 
 PEG = "*"
 HOLE = "O"
 WALL = "█"
 
+X = 0
+Y = 0
 # Define new types for this file
 BoardSet = FrozenSet[Tuple[str, Tuple[int, int]]]
 CompleteBoard = List[List[str]]
 
+########################################################################################
+########################################################################################
+########################################################################################
+
+class _Getch:
+    def __call__(self):
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(3)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
+
+########################################################################################
+########################################################################################
+########################################################################################
 
 class PegSolitaire:
     def __init__(self, instructions: BoardSet, finished_board: CompleteBoard = None):
@@ -59,20 +84,30 @@ class PegSolitaire:
             self.height = height - 1
             self.board = board
 
+########################################################################################
+
     def copy(self):
         """ Returns a copy of the current board """
         return PegSolitaire(None, [x[:] for x in self.board])
+
+########################################################################################
 
     # These two functions allow you to index this object, i.e. PegSolitaire[0][1]
     def __getitem__(self, key: int) -> List[str]:
         return self.board[key]
 
+########################################################################################
+
     def __iter__(self):
         return self.board
+
+########################################################################################
 
     def __repr__(self):
         """ Returns a printable version of the board """
         return pformat(self.board)
+
+########################################################################################
 
     def __lt__(self, other):
         # first = self.pegs_remaining() + len(self.total_moves())
@@ -80,11 +115,17 @@ class PegSolitaire:
         # return first < second
         return self.pegs_remaining() < other.pegs_remaining()
 
+########################################################################################
+
     def __eq__(self, other):
         return self.board == other.board
 
+########################################################################################
+
     def __hash__(self):
         return hash(tuple([tuple(b) for b in self.board]))
+
+########################################################################################
 
     def perform_move(self, x1: int, y1: int, x2: int, y2: int):
         """ Given two sets of xy coordinates, SOURCE -> DESTINATION, this will move
@@ -108,6 +149,8 @@ class PegSolitaire:
         # Remove old peg from its former position
         self.board[x1][y1] = HOLE
 
+########################################################################################
+
     def total_moves(self):
         """ Will return a list of available moves on a board """
         moves = []
@@ -120,6 +163,8 @@ class PegSolitaire:
 
         return moves
 
+########################################################################################
+
     def pegs_remaining(self) -> int:
         """ Returns the total amount of remaining pegs. This is used as a heuristic
             for checking if the board is solvable
@@ -130,6 +175,8 @@ class PegSolitaire:
                 if spot == PEG:
                     pegs += 1
         return pegs
+
+########################################################################################
 
     def _find_holes(self) -> List[Tuple[int, int]]:
         holes = []
@@ -142,6 +189,8 @@ class PegSolitaire:
                     holes.append((i, j))
 
         return holes
+
+########################################################################################
 
     # A "move" is defined as such:
     # If there are two pins in a row in any direction around the hole, there is a move
@@ -166,6 +215,9 @@ class PegSolitaire:
                 moves.append((x + 2, y, x, y))
         return moves
 
+########################################################################################
+########################################################################################
+########################################################################################
 
 def process_frozen_sets(input_file: str) -> BoardSet:
     boards = []
@@ -180,6 +232,8 @@ def process_frozen_sets(input_file: str) -> BoardSet:
     return boards
 
 
+########################################################################################
+
 def a_star_solve(board: PegSolitaire) -> bool:
     board_queue = PriorityQueue()
     board_set = set()
@@ -192,6 +246,7 @@ def a_star_solve(board: PegSolitaire) -> bool:
     while not board_queue.empty():
         end = time.time()
 
+        # Move on to the next board if it takes too long to solve this puzzle
         if end-start > 12:
             return False
 
@@ -220,6 +275,96 @@ def a_star_solve(board: PegSolitaire) -> bool:
 
     return False
 
+########################################################################################
+
+def print_board(board: PegSolitaire) -> None:
+    """ Will print out the game board.
+        - The outside borders will be blue
+        - The inside structure will be green
+        - The pegs will be yellow if the player is not on them, red otherwise
+        - The walls will be black if the player is not on them, red otherwise
+        - The holes will be empty if the player is not on them, red circle otherwise
+    """
+
+    # Top border
+    cprint("+", "blue", end="", attrs=["bold"])
+    for _ in range(len(board.board[0])):
+        cprint("---+", "blue", end="", attrs=["bold"])
+
+    for i, row in enumerate(board.board):
+        # Left-most side wall
+        cprint("\n|", "blue", end="", attrs=["bold"])
+
+        for j, spot in enumerate(row):
+            # Printing the walls, pegs, and holes
+            if spot == PEG:
+                if i == X and j == Y:
+                    cprint(" {} ".format(PEG), "red", end="", attrs=["bold"])
+                else:
+                    cprint(" {} ".format(PEG), "yellow", end="", attrs=["bold"])
+
+            elif spot == WALL:
+                if i == X and j == Y:
+                    cprint("{}".format(WALL * 3), "red", end="")
+                else:
+                    cprint("{}".format(WALL * 3), "grey", end="")
+            else:
+                if i == X and j == Y:
+                    cprint(" H ", "red", end="")
+                else:
+                    print("   ", end="")
+
+            # Print out the inner walls in green, and the right-most wall blue
+            if j != len(row) - 1:
+                cprint("|", "green", end="", attrs=["bold"])
+            else:
+                cprint("|", "blue", end="", attrs=["bold"])
+        print("\n", end="")
+
+        # Horizontal inner divididing lines
+        if i != len(row) - 1:
+            for _ in range(len(row)):
+                cprint("+---", "green", end="", attrs=["bold"])
+            cprint("+", "blue", end="", attrs=["bold"])
+
+    # Bottom Border
+    cprint("+", "blue", end="", attrs=["bold"])
+    for _ in range(len(board.board[0])):
+        cprint("---+", "blue", end="", attrs=["bold"])
+    print()
+    return
+
+########################################################################################
+
+def start_game(board: PegSolitaire) -> None:
+    while(True):
+        os.system("clear")
+        print_board(board)
+        get(board)
+
+########################################################################################
+
+def get(board: PegSolitaire):
+    global X
+    global Y
+    inkey = _Getch()
+    while(True):
+            k = inkey()
+            if k != '':
+                break
+    if k=='\x1b[A':
+        X = max(0, X-1) #up
+    elif k=='\x1b[B':
+        X = min(board.width, X+1) #down
+    elif k=='\x1b[C':
+        Y = min(board.width, Y+1) #right
+    elif k=='\x1b[D':
+        Y = max(0, Y-1) #left
+    else:
+        exit(1)
+        print("not an arrow key!")
+
+########################################################################################
 
 def main():
     fzs = process_frozen_sets(sys.argv[1])
@@ -227,14 +372,22 @@ def main():
     for i, fz in enumerate(fzs):
         boards.append(PegSolitaire(fz))
 
-
     solvable = []
-    # f = open("successfull_boards", "w")
     for i, board in enumerate(boards[:10]):
         print("Board {}".format(i))
         if a_star_solve(board) == True:
-            print("Board {} is solvable!".format(i))
-            # f.write(str(fzs[i]) + "\n")
+            start_game(board)
+
+
+            # f = open("success/successfull_boards_ascii_{}.txt".format(i), "w")
+            # print("Board {} is solvable!".format(i))
+            # for j, row in enumerate(board.board):
+            #     for k, spot in enumerate(row):
+            #         f.write(spot)
+            #         if k != len(row) - 1:
+            #             f.write(" ")
+            #     if j != len(row) - 1:
+            #         f.write("\n")
             solvable.append(i)
 
     print(solvable)
