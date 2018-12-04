@@ -1,12 +1,20 @@
 """
- Example program to show using an array to back a grid on-screen.
+Peg Solitaire Puzzle Implementation
+Author: Spencer Chang, Jacob Marshall
+
+This program implements the peg solitaire game for 3 different game boards.
+Solvability is not guaranteed on at least one...yet.
+
+The program used the following websites to create its base code.
+
+# Example program to show using an array to back a grid on-screen.
+# 
+# Sample Python/Pygame Programs
+# Simpson College Computer Science
+# http://programarcadegames.com/
+# http://simpson.edu/computer-science/
  
- Sample Python/Pygame Programs
- Simpson College Computer Science
- http://programarcadegames.com/
- http://simpson.edu/computer-science/
- 
- Explanation video: http://youtu.be/mdTeqiWyFnc
+# Explanation video: http://youtu.be/mdTeqiWyFn
 """
 import pygame
  
