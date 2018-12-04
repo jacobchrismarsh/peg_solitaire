@@ -16,6 +16,7 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (50, 50, 255)
+GOLD = (255, 215, 0)
 DKGREEN = (0, 100, 0)
  
 # This sets the WIDTH and HEIGHT of each grid location
@@ -32,6 +33,66 @@ PEG_SELECT = 2
 PEG_WALL = 3
 
 mouseDown = False
+
+# This class represents the player
+# It derives from the "Sprite" class in Pygame
+class Button():
+    # Constructor. Pass in the color of the block, and its x and y position
+    def __init__(self, origin, advanceBoard):
+        # Determines whether we are meant to advance the board list or not
+        self.adv = advanceBoard
+
+        # Variables to hold the height and width of the block
+        self.width = 20
+        self.height = 20
+ 
+        # Create an image of the player, and fill it with a color.
+        # This could also be an image loaded from the disk.
+        self.image = pygame.Surface([self.width, self.height])
+        self.image.fill(DKGREEN)
+        self.rect = self.image.get_rect()
+        self.rect.x = origin[0]
+        self.rect.y = origin[1]
+        self.point_list = []
+        if self.adv:
+            self.point_list.append([self.rect.x + 5, self.rect.y + 2])
+            self.point_list.append([self.rect.x + 17, self.rect.y + 9])
+            self.point_list.append([self.rect.x + 17, self.rect.y + 10])
+            self.point_list.append([self.rect.x + 5, self.rect.y + 17])
+        else:
+            self.point_list.append([self.rect.x + 17, self.rect.y + 2])
+            self.point_list.append([self.rect.x + 5, self.rect.y + 9])
+            self.point_list.append([self.rect.x + 5, self.rect.y + 10])
+            self.point_list.append([self.rect.x + 17, self.rect.y + 17])
+
+    # Update the position of the player
+    def update(self, screen, board_list, idx):
+        pos = pygame.mouse.get_pos()
+        grid = board_list[idx]
+        midpoint = [self.rect.x + self.width // 2, self.rect.y + self.height // 2]
+
+        # The mouse click was not meant for this button
+        if abs(pos[0] - midpoint[0]) > 8 or abs(pos[1] - midpoint[1]) > 8:
+            return grid, idx
+        if self.adv and idx >= len(board_list) - 1:
+            # There are no more boards to be had
+            return grid, idx
+        elif not self.adv and idx <= 0:
+            return grid, idx
+
+        # Advance or retreat on boards
+        if self.adv:
+            idx += 1
+        else:
+            idx -= 1
+        grid = board_list[idx]            
+        print("Button clicked: " + str(self.adv))
+        return grid, idx
+
+    # When we update the screen, we need to call the following method
+    def drawIcon(self, screen):
+        pygame.draw.rect(screen, DKGREEN, self.rect)
+        pygame.draw.polygon(screen, GOLD, self.point_list)
 
 def mouseColorSpace(grid, screen):
     # User clicks the mouse. Get the position
@@ -91,9 +152,7 @@ def jumpPeg(grid, selCoord, row, col):
 
     return grid
 
-
-if __name__ == "__main__":
-
+def makeTestBoards(board_list):
     # Create a 2 dimensional array. A two dimensional
     # array is simply a list of lists.
     grid = []
@@ -102,20 +161,49 @@ if __name__ == "__main__":
         # in this row
         grid.append([])
         for column in range(N_SQ):
+            # MAKE A CROSS SHAPE
             if (row < 2 and column < 2) or (row >= 5 and column < 2) or (row >= 5 and column >= 5) or (row < 2 and column >= 5):
                 grid[row].append(PEG_WALL)
             else:
                 grid[row].append(PEG_EXIST)  # Append a cell
-    
-    # Set row 1, cell 5 to one. (Remember rows and
-    # column numbers start at zero.)
+    # Need at least one hole in the center
     grid[3][3] = 0
+    board_list.append(grid) 
+
+    grid = []
+    for row in range(N_SQ):
+        grid.append([])
+        for column in range(N_SQ):
+            # MAKE A SQUARE SHAPE
+            grid[row].append(PEG_EXIST)  # Append a cell
+    grid[3][3] = 0
+    board_list.append(grid)
+
+    grid = []
+    for row in range(N_SQ):
+        grid.append([])
+        for column in range(N_SQ):
+            # MAKE AN H SHAPE
+            if (row < 2 and column == 3) or (row >= 5 and column == 3):
+                grid[row].append(PEG_WALL)
+            else:
+                grid[row].append(PEG_EXIST)
+    grid[3][3] = 0
+    board_list.append(grid)
+    return board_list
+
+if __name__ == "__main__":
+    gameBoards = []
+    gameBoards = makeTestBoards(gameBoards)
+    boardIdx = 0
     
     # Initialize pygame
     pygame.init()
     
     # Set the HEIGHT and WIDTH of the screen
-    windowSize = [HEIGHT * N_SQ + MARGIN * N_SQ + MARGIN, WIDTH * N_SQ + MARGIN * N_SQ + MARGIN]
+    navWinOrigin = [0, N_SQ * (HEIGHT + MARGIN) + MARGIN]
+    navWinHeight = HEIGHT * 4
+    windowSize = [N_SQ * (WIDTH + MARGIN) + MARGIN, N_SQ * (HEIGHT + MARGIN) + MARGIN + navWinHeight]
     screen = pygame.display.set_mode(windowSize)
     
     # Set title of screen
@@ -126,6 +214,11 @@ if __name__ == "__main__":
 
     # Used to manage how fast the screen updates
     clock = pygame.time.Clock()
+    leftButton = Button([windowSize[0] // 2 - (N_SQ * WIDTH // 2 // 2), navWinOrigin[1] + (N_SQ * HEIGHT // 2 // 2)], False)
+    rightButton = Button([windowSize[0] - (N_SQ * WIDTH // 2), navWinOrigin[1] + (N_SQ * HEIGHT // 2 // 2)], True)
+    button_list = [leftButton, rightButton]
+    
+    grid = gameBoards[boardIdx]
     
     # -------- Main Program Loop -----------
     while not done:
@@ -133,10 +226,9 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:  # If user clicked close
                 done = True  # Flag that we are done so we exit this loop
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # mouseDown = True
                 grid, screen = mouseColorSpace(grid, screen)
-            # elif event.type == pygame.MOUSEBUTTONUP:
-            #     # mouseDown = False
+                grid, boardIdx = rightButton.update(screen, gameBoards, boardIdx)
+                grid, boardIdx = leftButton.update(screen, gameBoards, boardIdx)
 
         # Set the screen background
         screen.fill(BLACK)
@@ -158,6 +250,8 @@ if __name__ == "__main__":
                                 (MARGIN + HEIGHT) * row + MARGIN,
                                 WIDTH,
                                 HEIGHT])
+        leftButton.drawIcon(screen)
+        rightButton.drawIcon(screen)
         # Limit to 60 frames per second
         clock.tick(60)
     
@@ -167,4 +261,3 @@ if __name__ == "__main__":
     # Be IDLE friendly. If you forget this line, the program will 'hang'
     # on exit.
     pygame.quit()
-
