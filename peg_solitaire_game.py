@@ -246,20 +246,25 @@ def main(frozensets=None):
     for i, fz in enumerate(fzs):
         gameBoards.append(bs.PegSolitaire(fz))
 
-    # Sort from least pegs to most pegs
-    gameBoards = sorted(gameBoards, key=lambda x: x.pegs_remaining())
+    # Sort the boards into a hash table where keys are the number of pegs and values
+    # are a list of boards
+    sorted_board_hash = {}
+    for board in gameBoards:
+        peg_count = board.pegs_remaining()
+        if peg_count != sorted_board_hash:
+            sorted_board_hash[peg_count] = [board]
+        else:
+            sorted_board_hash[peg_count].append(board)
 
     # Try to solve the game boards
     solvable = []
-    print("Generating Boards")
-    for i, board in enumerate(gameBoards):
-        if bs.a_star_solve(board) == True:
-            print("Found a solvable board!")
-            solvable.append(board.board)
-
-        # Stop once we have three puzzles
-        if len(solvable) == 3:
-            break;
+    print("Generating {} Boards".format(len(sorted_board_hash.keys())))
+    for key in sorted(sorted_board_hash.keys()):
+        for board in sorted_board_hash[key]:
+            if bs.a_star_solve(board) == True:
+                print("Found a solvable board with {} pegs!".format(key))
+                solvable.append(board)
+                break;
 
     # Grab the number of squares in one row of a game board
     N_SQ = len(solvable[0][0])
