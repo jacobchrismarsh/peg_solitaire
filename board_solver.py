@@ -6,9 +6,9 @@ By: Spencer Chang, Jacob Marshall
 
 import os
 import sys
-import termios
+# import termios
 import time
-import tty
+# import tty
 from pprint import pprint, pformat
 from queue import PriorityQueue
 from termcolor import cprint
@@ -29,16 +29,16 @@ CompleteBoard = List[List[str]]
 ########################################################################################
 ########################################################################################
 
-class _Getch:
-    def __call__(self):
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd)
-            try:
-                tty.setraw(sys.stdin.fileno())
-                ch = sys.stdin.read(3)
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-            return ch
+# class _Getch:
+#     def __call__(self):
+#             fd = sys.stdin.fileno()
+#             old_settings = termios.tcgetattr(fd)
+#             try:
+#                 tty.setraw(sys.stdin.fileno())
+#                 ch = sys.stdin.read(3)
+#             finally:
+#                 termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+#             return ch
 
 ########################################################################################
 ########################################################################################
@@ -336,47 +336,47 @@ def print_board(board: PegSolitaire) -> None:
 
 ########################################################################################
 
-def start_game(board: PegSolitaire) -> None:
-    while(True):
-        os.system("clear")
-        print_board(board)
-        get(board)
+# def start_game(board: PegSolitaire) -> None:
+#     while(True):
+#         os.system("clear")
+#         print_board(board)
+#         get(board)
 
 ########################################################################################
 
-def get(board: PegSolitaire):
-    global X
-    global Y
-    inkey = _Getch()
-    while(True):
-            k = inkey()
-            if k != '':
-                break
-    if k=='\x1b[A':
-        X = max(0, X-1) #up
-    elif k=='\x1b[B':
-        X = min(board.width, X+1) #down
-    elif k=='\x1b[C':
-        Y = min(board.width, Y+1) #right
-    elif k=='\x1b[D':
-        Y = max(0, Y-1) #left
-    else:
-        exit(1)
-        print("not an arrow key!")
+# def get(board: PegSolitaire): #     global X
+#     global Y
+#     inkey = _Getch()
+#     while(True):
+#             k = inkey()
+#             if k != '':
+#                 break
+#     if k=='\x1b[A':
+#         X = max(0, X-1) #up
+#     elif k=='\x1b[B':
+#         X = min(board.width, X+1) #down
+#     elif k=='\x1b[C':
+#         Y = min(board.width, Y+1) #right
+#     elif k=='\x1b[D':
+#         Y = max(0, Y-1) #left
+#     else:
+#         exit(1)
+#         print("not an arrow key!")
 
 ########################################################################################
 
 def main():
-    fzs = process_frozen_sets(sys.argv[1])
-    boards = []
-    for i, fz in enumerate(fzs):
-        boards.append(PegSolitaire(fz))
+    return
+    # fzs = process_frozen_sets(sys.argv[1])
+    # boards = []
+    # for i, fz in enumerate(fzs):
+    #     boards.append(PegSolitaire(fz))
 
-    solvable = []
-    for i, board in enumerate(boards[:10]):
-        print("Board {}".format(i))
-        if a_star_solve(board) == True:
-            start_game(board)
+    # solvable = []
+    # for i, board in enumerate(boards[:10]):
+    #     print("Board {}".format(i))
+    #     if a_star_solve(board) == True:
+    #         start_game(board)
 
 
             # f = open("success/successfull_boards_ascii_{}.txt".format(i), "w")
@@ -388,10 +388,10 @@ def main():
             #             f.write(" ")
             #     if j != len(row) - 1:
             #         f.write("\n")
-            solvable.append(i)
+            # solvable.append(i)
 
-    print(solvable)
-    print("Total solvable puzzles: {}".format(len(solvable)))
+    # print(solvable)
+    # print("Total solvable puzzles: {}".format(len(solvable)))
 
 
 

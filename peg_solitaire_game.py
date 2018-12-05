@@ -20,9 +20,9 @@ import board_solver as bs
 import os
 import pygame
 import sys
-import termios
+# import termios
 import time
-import tty
+# import tty
 
 from pprint import pprint, pformat
 from queue import PriorityQueue
@@ -232,21 +232,29 @@ def makeTestBoards(board_list):
     return board_list
 
 
-def main(frozensets):
+def main(frozensets=None):
     # Reference the global variable N_SQ
     global N_SQ
 
     # Process a file to get frozen sets
     gameBoards = []
-    fzs = frozensets
+    if frozensets == None:
+        fzs = bs.process_frozen_sets(sys.argv[1])
+    else:
+        fzs = frozensets
+
     for i, fz in enumerate(fzs):
         gameBoards.append(bs.PegSolitaire(fz))
 
-    # Try to solve
+    # Sort from least pegs to most pegs
+    gameBoards = sorted(gameBoards, key=lambda x: x.pegs_remaining())
+
+    # Try to solve the game boards
     solvable = []
     print("Generating Boards")
     for i, board in enumerate(gameBoards):
         if bs.a_star_solve(board) == True:
+            print("Found a solvable board!")
             solvable.append(board.board)
 
         # Stop once we have three puzzles
