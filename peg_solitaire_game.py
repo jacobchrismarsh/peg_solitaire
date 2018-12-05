@@ -16,7 +16,18 @@ The program used the following websites to create its base code.
 
 # Explanation video: http://youtu.be/mdTeqiWyFn
 """
+import board_solver as bs
+import os
 import pygame
+import sys
+import termios
+import time
+import tty
+
+from pprint import pprint, pformat
+from queue import PriorityQueue
+from termcolor import cprint
+from typing import FrozenSet, List, Tuple
 
 # Define some colors
 BLACK = (0, 0, 0)
@@ -222,8 +233,25 @@ def makeTestBoards(board_list):
 
 
 def main():
+    # Reference the global variable N_SQ
+    global N_SQ
+
+    # Process a file to get frozen sets
     gameBoards = []
-    gameBoards = makeTestBoards(gameBoards)
+    fzs = bs.process_frozen_sets(sys.argv[1])
+    for i, fz in enumerate(fzs):
+        gameBoards.append(bs.PegSolitaire(fz))
+
+    # Try to solve
+    solvable = []
+    for i, board in enumerate(gameBoards[:5]):
+        if bs.a_star_solve(board) == True:
+            solvable.append(board.board)
+
+    # Grab the number of squares in one row of a game board
+    N_SQ = len(solvable[0][0])
+
+    # gameBoards = makeTestBoards(gameBoards)
     boardIdx = 0
 
     # Initialize pygame
@@ -262,7 +290,7 @@ def main():
     )
     button_list = [leftButton, rightButton]
 
-    grid = gameBoards[boardIdx]
+    grid = solvable[boardIdx]
 
     # -------- Main Program Loop -----------
     while not done:
@@ -271,8 +299,8 @@ def main():
                 done = True  # Flag that we are done so we exit this loop
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 grid, screen = mouseColorSpace(grid, screen)
-                grid, boardIdx = rightButton.update(screen, gameBoards, boardIdx)
-                grid, boardIdx = leftButton.update(screen, gameBoards, boardIdx)
+                grid, boardIdx = rightButton.update(screen, solvable, boardIdx)
+                grid, boardIdx = leftButton.update(screen, solvable, boardIdx)
 
         # Set the screen background
         screen.fill(BLACK)
