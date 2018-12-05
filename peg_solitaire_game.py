@@ -232,21 +232,26 @@ def makeTestBoards(board_list):
     return board_list
 
 
-def main():
+def main(frozensets):
     # Reference the global variable N_SQ
     global N_SQ
 
     # Process a file to get frozen sets
     gameBoards = []
-    fzs = bs.process_frozen_sets(sys.argv[1])
+    fzs = frozensets
     for i, fz in enumerate(fzs):
         gameBoards.append(bs.PegSolitaire(fz))
 
     # Try to solve
     solvable = []
-    for i, board in enumerate(gameBoards[:5]):
+    print("Generating Boards")
+    for i, board in enumerate(gameBoards):
         if bs.a_star_solve(board) == True:
             solvable.append(board.board)
+
+        # Stop once we have three puzzles
+        if len(solvable) == 3:
+            break;
 
     # Grab the number of squares in one row of a game board
     N_SQ = len(solvable[0][0])
