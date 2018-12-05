@@ -15,9 +15,9 @@ from termcolor import cprint
 from typing import FrozenSet, List, Tuple
 
 
-PEG = "*"
-HOLE = "O"
-WALL = "█"
+HOLE = 0
+PEG = 1
+WALL = 3
 
 X = 0
 Y = 0
