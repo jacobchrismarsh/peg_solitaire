@@ -8,16 +8,16 @@ Solvability is not guaranteed on at least one...yet.
 The program used the following websites to create its base code.
 
 # Example program to show using an array to back a grid on-screen.
-# 
+#
 # Sample Python/Pygame Programs
 # Simpson College Computer Science
 # http://programarcadegames.com/
 # http://simpson.edu/computer-science/
- 
+
 # Explanation video: http://youtu.be/mdTeqiWyFn
 """
 import pygame
- 
+
 # Define some colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -26,11 +26,11 @@ RED = (255, 0, 0)
 BLUE = (50, 50, 255)
 GOLD = (255, 215, 0)
 DKGREEN = (0, 100, 0)
- 
+
 # This sets the WIDTH and HEIGHT of each grid location
 WIDTH = 20
 HEIGHT = 20
- 
+
 # This sets the margin between each cell
 MARGIN = 5
 N_SQ = 7
@@ -44,7 +44,7 @@ mouseDown = False
 
 # This class represents the player
 # It derives from the "Sprite" class in Pygame
-class Button():
+class Button:
     # Constructor. Pass in the color of the block, and its x and y position
     def __init__(self, origin, advanceBoard):
         # Determines whether we are meant to advance the board list or not
@@ -53,7 +53,7 @@ class Button():
         # Variables to hold the height and width of the block
         self.width = 20
         self.height = 20
- 
+
         # Create an image of the player, and fill it with a color.
         # This could also be an image loaded from the disk.
         self.image = pygame.Surface([self.width, self.height])
@@ -93,7 +93,7 @@ class Button():
             idx += 1
         else:
             idx -= 1
-        grid = board_list[idx]            
+        grid = board_list[idx]
         print("Button clicked: " + str(self.adv))
         return grid, idx
 
@@ -101,6 +101,7 @@ class Button():
     def drawIcon(self, screen):
         pygame.draw.rect(screen, DKGREEN, self.rect)
         pygame.draw.polygon(screen, GOLD, self.point_list)
+
 
 def mouseColorSpace(grid, screen):
     # User clicks the mouse. Get the position
@@ -125,28 +126,41 @@ def mouseColorSpace(grid, screen):
                     continue
 
                 # We're looking at the same coord touched by mouse
-                if (grid[r][c] == PEG_NONE and coord != [-1, -1] and (abs(coord[0] - r) == 2 or abs(coord[1] - c) == 2)):
+                if (
+                    grid[r][c] == PEG_NONE
+                    and coord != [-1, -1]
+                    and (abs(coord[0] - r) == 2 or abs(coord[1] - c) == 2)
+                ):
                     grid = jumpPeg(grid, coord, r, c)
                 elif [r, c] == coord:
                     grid[coord[0]][coord[1]] = PEG_EXIST
-                elif coord != [-1, -1] and coord != [r, c] and (grid[r][c] != PEG_NONE and grid[r][c] != PEG_WALL):
+                elif (
+                    coord != [-1, -1]
+                    and coord != [r, c]
+                    and (grid[r][c] != PEG_NONE and grid[r][c] != PEG_WALL)
+                ):
                     grid[coord[0]][coord[1]] = PEG_EXIST
                     grid[r][c] = PEG_SELECT
-                elif coord == [-1, -1] and (grid[r][c] != PEG_NONE and grid[r][c] != PEG_WALL):
-                   grid[r][c] = PEG_SELECT 
-                
+                elif coord == [-1, -1] and (
+                    grid[r][c] != PEG_NONE and grid[r][c] != PEG_WALL
+                ):
+                    grid[r][c] = PEG_SELECT
+
         print("Click ", pos, "Grid coordinates: ", row, column)
- 
+
     return grid, screen
 
+
 def jumpPeg(grid, selCoord, row, col):
-    '''
+    """
     Provides the logic for jumping pegs in the solitaire game
-    Pre-condition: 2 pegs and 1 hole in a line, the selected peg is at the end of this line, [i.e. (P P H), (H P P)]
+    Pre-condition: 2 pegs and 1 hole in a line, the selected peg is at the end of this
+                   line, [i.e. (P P H), (H P P)]
     Post-condition: 2 holes and 1 peg in a line, [i.e. (H H P), (P H H)]
 
-    We know that the given selCoord should be a selected peg and the 'row' and 'col' are the hole.
-    '''
+    We know that the given selCoord should be a selected peg and the 'row' and 'col' are
+    the hole.
+    """
     # We want to check that the selected peg is in line with proper preconditions
     if row != selCoord[0] and col != selCoord[1]:
         return grid
@@ -160,6 +174,7 @@ def jumpPeg(grid, selCoord, row, col):
 
     return grid
 
+
 def makeTestBoards(board_list):
     # Create a 2 dimensional array. A two dimensional
     # array is simply a list of lists.
@@ -170,13 +185,18 @@ def makeTestBoards(board_list):
         grid.append([])
         for column in range(N_SQ):
             # MAKE A CROSS SHAPE
-            if (row < 2 and column < 2) or (row >= 5 and column < 2) or (row >= 5 and column >= 5) or (row < 2 and column >= 5):
+            if (
+                (row < 2 and column < 2)
+                or (row >= 5 and column < 2)
+                or (row >= 5 and column >= 5)
+                or (row < 2 and column >= 5)
+            ):
                 grid[row].append(PEG_WALL)
             else:
                 grid[row].append(PEG_EXIST)  # Append a cell
     # Need at least one hole in the center
     grid[3][3] = 0
-    board_list.append(grid) 
+    board_list.append(grid)
 
     grid = []
     for row in range(N_SQ):
@@ -200,34 +220,50 @@ def makeTestBoards(board_list):
     board_list.append(grid)
     return board_list
 
-if __name__ == "__main__":
+
+def main():
     gameBoards = []
     gameBoards = makeTestBoards(gameBoards)
     boardIdx = 0
-    
+
     # Initialize pygame
     pygame.init()
-    
+
     # Set the HEIGHT and WIDTH of the screen
     navWinOrigin = [0, N_SQ * (HEIGHT + MARGIN) + MARGIN]
     navWinHeight = HEIGHT * 4
-    windowSize = [N_SQ * (WIDTH + MARGIN) + MARGIN, N_SQ * (HEIGHT + MARGIN) + MARGIN + navWinHeight]
+    windowSize = [
+        N_SQ * (WIDTH + MARGIN) + MARGIN,
+        N_SQ * (HEIGHT + MARGIN) + MARGIN + navWinHeight,
+    ]
     screen = pygame.display.set_mode(windowSize)
-    
+
     # Set title of screen
     pygame.display.set_caption("Peg Solitaire Puzzles")
-    
+
     # Loop until the user clicks the close button.
     done = False
 
     # Used to manage how fast the screen updates
     clock = pygame.time.Clock()
-    leftButton = Button([windowSize[0] // 2 - (N_SQ * WIDTH // 2 // 2), navWinOrigin[1] + (N_SQ * HEIGHT // 2 // 2)], False)
-    rightButton = Button([windowSize[0] - (N_SQ * WIDTH // 2), navWinOrigin[1] + (N_SQ * HEIGHT // 2 // 2)], True)
+    leftButton = Button(
+        [
+            windowSize[0] // 2 - (N_SQ * WIDTH // 2 // 2),
+            navWinOrigin[1] + (N_SQ * HEIGHT // 2 // 2),
+        ],
+        False,
+    )
+    rightButton = Button(
+        [
+            windowSize[0] - (N_SQ * WIDTH // 2),
+            navWinOrigin[1] + (N_SQ * HEIGHT // 2 // 2),
+        ],
+        True,
+    )
     button_list = [leftButton, rightButton]
-    
+
     grid = gameBoards[boardIdx]
-    
+
     # -------- Main Program Loop -----------
     while not done:
         for event in pygame.event.get():  # User did something
@@ -240,7 +276,7 @@ if __name__ == "__main__":
 
         # Set the screen background
         screen.fill(BLACK)
-    
+
         # Draw the grid
         for row in range(N_SQ):
             for column in range(N_SQ):
@@ -252,20 +288,28 @@ if __name__ == "__main__":
                     color = BLUE
                 else:
                     color = BLACK
-                pygame.draw.rect(screen,
-                                color,
-                                [(MARGIN + WIDTH) * column + MARGIN,
-                                (MARGIN + HEIGHT) * row + MARGIN,
-                                WIDTH,
-                                HEIGHT])
+                pygame.draw.rect(
+                    screen,
+                    color,
+                    [
+                        (MARGIN + WIDTH) * column + MARGIN,
+                        (MARGIN + HEIGHT) * row + MARGIN,
+                        WIDTH,
+                        HEIGHT,
+                    ],
+                )
         leftButton.drawIcon(screen)
         rightButton.drawIcon(screen)
         # Limit to 60 frames per second
         clock.tick(60)
-    
+
         # Go ahead and update the screen with what we've drawn.
         pygame.display.flip()
-    
+
     # Be IDLE friendly. If you forget this line, the program will 'hang'
     # on exit.
     pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
