@@ -247,7 +247,9 @@ def a_star_solve(board: PegSolitaire) -> bool:
         end = time.time()
 
         # Move on to the next board if it takes too long to solve this puzzle
-        if end-start > 12:
+        if end - start >= 15:
+            print(".", end="")
+            sys.stdout.flush()
             return False
 
         # Get a board and all its available moves.
@@ -261,6 +263,8 @@ def a_star_solve(board: PegSolitaire) -> bool:
         if len(moves) == 0:
             # Congrats! You found a board that can be solved!
             if curr_board.pegs_remaining() == 1:
+                print("!", end="")
+                sys.stdout.flush()
                 return True
             continue
 

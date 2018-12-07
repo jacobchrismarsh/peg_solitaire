@@ -22,6 +22,7 @@ import pygame
 import sys
 # import termios
 import time
+import copy
 # import tty
 
 from pprint import pprint, pformat
@@ -85,7 +86,7 @@ class Button:
             self.point_list.append([self.rect.x + 17, self.rect.y + 17])
 
     # Update the position of the player
-    def update(self, screen, board_list, idx):
+    def update(self, screen, board_list, og_list, idx):
         pos = pygame.mouse.get_pos()
         grid = board_list[idx]
         midpoint = [self.rect.x + self.width // 2, self.rect.y + self.height // 2]
@@ -104,6 +105,8 @@ class Button:
             idx += 1
         else:
             idx -= 1
+        # Reset the board to the original; this is the reset functionality
+        board_list[idx] = copy.deepcopy(og_list[idx])
         grid = board_list[idx]
         print("Button clicked: " + str(self.adv))
         return grid, idx
@@ -251,20 +254,41 @@ def main(frozensets=None):
     sorted_board_hash = {}
     for board in gameBoards:
         peg_count = board.pegs_remaining()
-        if peg_count != sorted_board_hash:
+        if peg_count not in sorted_board_hash:
             sorted_board_hash[peg_count] = [board]
         else:
             sorted_board_hash[peg_count].append(board)
 
     # Try to solve the game boards
     solvable = []
-    print("Generating {} Boards".format(len(sorted_board_hash.keys())))
+    # print("Generating {} Boards".format(len(sorted_board_hash.keys())))
+    print("Checking Board Solvability")
+    [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
+    sys.stdout.flush()
+    t_0 = time.clock()
     for key in sorted(sorted_board_hash.keys()):
+        bd_time_0 = time.clock()
         for board in sorted_board_hash[key]:
             if bs.a_star_solve(board) == True:
                 print("Found a solvable board with {} pegs!".format(key))
                 solvable.append(board)
-                break;
+                break
+        bd_time_1 = time.clock()
+        print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
+        sys.stdout.flush()
+        if len(solvable) >= 5:
+            break
+    t_1 = time.clock()
+
+    print("Check took {0} seconds".format(t_1 - t_0))
+
+    if len(solvable) == 0:
+        print("No solvable boards found. Press enter to exit.")
+        input()
+        exit()
+
+    # Preserve the original board configurations
+    originals = copy.deepcopy(solvable)
 
     # Grab the number of squares in one row of a game board
     N_SQ = len(solvable[0][0])
@@ -317,8 +341,8 @@ def main(frozensets=None):
                 done = True  # Flag that we are done so we exit this loop
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 grid, screen = mouseColorSpace(grid, screen)
-                grid, boardIdx = rightButton.update(screen, solvable, boardIdx)
-                grid, boardIdx = leftButton.update(screen, solvable, boardIdx)
+                grid, boardIdx = rightButton.update(screen, solvable, originals, boardIdx)
+                grid, boardIdx = leftButton.update(screen, solvable, originals, boardIdx)
 
         # Set the screen background
         screen.fill(BLACK)

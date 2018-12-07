@@ -2,6 +2,7 @@ from clyngor import ASP, solve
 import peg_solitaire_game as psg
 import sys
 import re
+import time
 
 if __name__ == "__main__":
     # ASP input from the C# settings
@@ -18,12 +19,15 @@ if __name__ == "__main__":
     answers = ASP(sys.argv[1], options="--rand-freq=1 --seed=1", time_limit=5)
     shapeList = []
 
+    t_0 = time.clock()
     for answer in answers:
         shapeList.append(answer)
 
         count += 1
         if count >= maxCount:
             break
+    t_1 = time.clock()
 
-    print("Created the Answer Sets...")
+    print("Created {0} Answer Sets...".format(len(shapeList)))
+    print("It took {0} seconds.".format(t_1 - t_0))
     psg.main(shapeList)
