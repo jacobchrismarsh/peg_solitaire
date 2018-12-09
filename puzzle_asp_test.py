@@ -1,14 +1,14 @@
 from clyngor import ASP, solve
 import peg_solitaire_game as psg
+import peg_solitaire_board_cmp as bcomp
 import sys
 import re
 import time
 
-clyngor
 
 if __name__ == "__main__":
     # ASP input from the C# settings
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         exit()
 
     answerSet = [x.strip() for x in re.split(
@@ -32,4 +32,10 @@ if __name__ == "__main__":
 
     print("Created {0} Answer Sets...".format(len(shapeList)))
     print("It took {0} seconds.".format(t_1 - t_0))
-    psg.main(shapeList)
+
+    if (sys.argv[2] == '0'):
+        print("DEBUG: Doing normal board generation...")
+        psg.main(shapeList)
+    else:
+        print("DEBUG: Doing board comparison...")
+        bcomp.main(shapeList)

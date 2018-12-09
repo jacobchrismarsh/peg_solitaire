@@ -18,14 +18,14 @@ public class mainGUI : MonoBehaviour {
 	public UnityEngine.UI.Dropdown adapterDropdown;
 	public UnityEngine.UI.Dropdown sizeDropdown;
 	public UnityEngine.UI.Dropdown shapeDropdown;
-	public UnityEngine.UI.Dropdown themeDropdown;
-	public UnityEngine.UI.Text debugOut;
+	// public UnityEngine.UI.Dropdown themeDropdown;
+	// public UnityEngine.UI.Text debugOut;
 
 	// Use this for initialization
 	void Start () {
 		// Acquire information from Unity UI
-		debugOut = GameObject.Find("DebugText")
-						     .GetComponent<UnityEngine.UI.Text>();
+		// debugOut = GameObject.Find("DebugText")
+		// 				     .GetComponent<UnityEngine.UI.Text>();
 		difficultySlider = GameObject.Find("DifficultySlider")
 									 .GetComponent<UnityEngine.UI.Slider>();
 		adapterDropdown = GameObject.Find("AdaptiveDropdown")
@@ -34,9 +34,9 @@ public class mainGUI : MonoBehaviour {
 								 .GetComponent<UnityEngine.UI.Dropdown>();
 		shapeDropdown = GameObject.Find("ShapeDropdown")
 								  .GetComponent<UnityEngine.UI.Dropdown>();
-		themeDropdown = GameObject.Find("ColorDropdown")
-								  .GetComponent<UnityEngine.UI.Dropdown>();
-		debugOut.text = "Click on 'Generate Puzzles' to make puzzles and see what numerical settings are set.";
+		// themeDropdown = GameObject.Find("ColorDropdown")
+		// 						  .GetComponent<UnityEngine.UI.Dropdown>();
+		// debugOut.text = "Click on 'Generate Puzzles' to make puzzles and see what numerical settings are set.";
 	}
 	
 	// Update is called once per frame
@@ -47,22 +47,27 @@ public class mainGUI : MonoBehaviour {
 	public void GenerateButtonClick () {
 		ProcessStartInfo start = new ProcessStartInfo();
 		string aspBoard = ASPMaker();
-		string outputString = "";
+		string diffCompResult = "0";
+		UnityEngine.UI.Toggle boardCompToggle = GameObject.Find("DifficultyCmp").GetComponent<UnityEngine.UI.Toggle>();
 
-        outputString += string.Format("Difficulty Slider = {0}.\n",
-									  difficultySlider.value);
-		outputString += string.Format("Adaptive Dropdown = {0}.\n",
-		                              adapterDropdown.value);
-		outputString += string.Format("Size = {0} x {0}.\n", 
-								      (int) sizeDropdown.value + MIN_SIZE);
-		outputString += string.Format("Shape = {0}.\n", shapeDropdown.value);
-		outputString += string.Format("Theme = {0}.\n", themeDropdown.value);
-		debugOut.text = outputString;
+		if (boardCompToggle.isOn)
+			diffCompResult = "1";
+		// string outputString = "";
 
-		string pythonFile = "C:/Users/Spencer/Desktop/Current_QTR_Doc's/CSC 570/ASP-Test/puzzle_asp_test.py";
+        // outputString += string.Format("Difficulty Slider = {0}.\n",
+		// 							  difficultySlider.value);
+		// outputString += string.Format("Adaptive Dropdown = {0}.\n",
+		//                               adapterDropdown.value);
+		// outputString += string.Format("Size = {0} x {0}.\n", 
+		// 						      (int) sizeDropdown.value + MIN_SIZE);
+		// outputString += string.Format("Shape = {0}.\n", shapeDropdown.value);
+		// // outputString += string.Format("Theme = {0}.\n", themeDropdown.value);
+		// debugOut.text = outputString;
+
+		string pythonFile = "C:/Users/Spencer/Desktop/Current_QTR_Doc's/CSC 570/PyGame-Test/puzzle_asp_test.py";
 		start.FileName = PY_PATH;
-		start.Arguments = string.Format("\"{0}\" \"{1}\"",
-		                                pythonFile, aspBoard);
+		start.Arguments = string.Format("\"{0}\" \"{1}\" \"{2}\"",
+		                                pythonFile, aspBoard, diffCompResult);
 		start.UseShellExecute = false;
 		start.CreateNoWindow = false;
 		start.RedirectStandardError = true;
@@ -70,8 +75,6 @@ public class mainGUI : MonoBehaviour {
 			using (StreamReader reader = process.StandardError) {
 				string result = reader.ReadToEnd();
 				UnityEngine.Debug.Log(result);
-				// Here is probably where we can put the ASCII boards into a array or simply let them sit in STDIN
-				//    until they are read out of STDIN
 			}
 		}
 	}
@@ -131,7 +134,7 @@ public class mainGUI : MonoBehaviour {
 		rules += "ycount(N) :- N = #count { y(X,Y) : dim(X), dim(Y), peg(X,Y), y(X,Y) }.";
 		rules += "zcount(N) :- N = #count { z(X,Y) : dim(X), dim(Y), peg(X,Y), z(X,Y) }.";
 		rules += "nosoln(1) :- A == B, B == C, xcount(A), ycount(B), zcount(C).";
-		rules += "nosoln(5) :- A == 0, B == 0, C == 0, xcount(A), ycount(B), zcount(C).";
+		// rules += "nosoln(5) :- Z == 0, Z = (A; B; C), xcount(A), ycount(B), zcount(C).";
 		rules += ":- dim(X), dim(Y), noneighbor(X,Y,0).";
 		rules += ":- nosoln(1).";
 		return rules;
@@ -139,10 +142,10 @@ public class mainGUI : MonoBehaviour {
 
     string difficultyUI(int difficulty, int adapt, int maxPegs) {
 		string rules = "";
-		int mid = (int) Mathf.Ceil(((float) sizeDropdown.value + MIN_SIZE) / 2);
+		// int mid = (int) Mathf.Ceil(((float) sizeDropdown.value + MIN_SIZE) / 2);
 
 		// Determine the number of pegs allowed through the shape-established areas
-		rules += string.Format("diffoffset(A) :- A = AR * (3 + {0}) * 15 / 100, area(AR).", difficulty);
+		rules += string.Format("diffoffset(A) :- A = AR * (2 + {0}) * 15 / 100, area(AR).", difficulty);
 		rules += "numpegs(A) :- A = #min { AR - 1; OFFS}, area(AR), diffoffset(OFFS).";
 
 		// Are we changing difficulty or not?
@@ -228,8 +231,9 @@ public class mainGUI : MonoBehaviour {
 			// Req: 3+ width or length for rows or columns respectively
 			case 6:
 				// Place SQUARE rules
-				rules += "1 { square; ears; rect; cross; hshape; corner } 1.";
-				rules += string.Format("sqarea({0}) :- square.", area);
+				// rules += "1 { square; ears; rect; cross; hshape; corner } 1.";
+				rules += "1 { ears; rect; cross; hshape; corner } 1.";
+				// rules += string.Format("sqarea({0}) :- square.", area);
 				// Place SQUARE EARS rule
 				tempDict = genEars(width);
 				rules += retrieveRulesFromDict(tempDict);

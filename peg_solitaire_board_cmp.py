@@ -259,11 +259,14 @@ def main(frozensets=None):
         else:
             sorted_board_hash[peg_count].append(board)
 
+    # Try to place the hardest board given our declared ASP stuff
+    hardest_key = max(sorted_board_hash.keys())
+    reverse_keys = [x for x in sorted_board_hash.keys()].reverse()
+
     # Try to solve the game boards
     solvable = []
     fail_limit = 30
     n_fails = 0
-    # print("Generating {} Boards".format(len(sorted_board_hash.keys())))
     print("Checking Board Solvability")
     [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
     sys.stdout.flush()
@@ -289,7 +292,7 @@ def main(frozensets=None):
         bd_time_1 = time.clock()
         print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
         sys.stdout.flush()
-        if len(solvable) >= 5:
+        if len(solvable) >= 2:
             break
     t_1 = time.clock()
 
