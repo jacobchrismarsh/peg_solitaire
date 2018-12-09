@@ -281,6 +281,41 @@ def a_star_solve(board: PegSolitaire) -> bool:
 
 ########################################################################################
 
+# Check this website for the logic on how this works:
+# http://www.cut-the-knot.org/proofs/PegsAndGroups.Bialostocki
+def bialostocki_solver(board: PegSolitaire) -> bool:
+    x_y_z = board.copy()
+    x = True
+    y = False
+    z = False
+    x_count = y_count = z_count = 0
+    # Fill the board with x, y, and z
+    for i, row in enumerate(x_y_z.board):
+        for j, spot in enumerate(row):
+            if x == True:
+                if(spot == PEG):
+                    x_count += 1
+                x = False
+                y = True
+            elif y == True:
+                if(spot == PEG):
+                    y_count += 1
+                y = False
+                z = True
+            elif z == True:
+                if(spot == PEG):
+                    z_count += 1
+                z = False
+                x = True
+
+    x_count %= 2
+    y_count %= 2
+    z_count %= 2
+
+    if (x == 0 and y == 0 and z == 0) or (x == 1 and y == 1 and z == 1):
+        return False
+    return True
+
 def print_board(board: PegSolitaire) -> None:
     """ Will print out the game board.
         - The outside borders will be blue

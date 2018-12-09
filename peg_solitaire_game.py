@@ -271,7 +271,7 @@ def main(frozensets=None):
     for key in sorted(sorted_board_hash.keys()):
         bd_time_0 = time.clock()
         for board in sorted_board_hash[key]:
-            if bs.a_star_solve(board) == True:
+            if bs.bialostocki_solver(board) == True:
                 print("\nFound a solvable board with {} pegs!".format(key))
                 print("Number of fails: {0}".format(n_fails), end="")
                 solvable.append(board)

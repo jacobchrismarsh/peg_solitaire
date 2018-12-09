@@ -4,6 +4,8 @@ import sys
 import re
 import time
 
+clyngor
+
 if __name__ == "__main__":
     # ASP input from the C# settings
     if len(sys.argv) != 2:
