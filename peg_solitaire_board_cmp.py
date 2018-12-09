@@ -23,6 +23,7 @@ import sys
 # import termios
 import time
 import copy
+import random
 # import tty
 
 from pprint import pprint, pformat
@@ -261,23 +262,25 @@ def main(frozensets=None):
 
     # Try to place the hardest board given our declared ASP stuff
     hardest_key = max(sorted_board_hash.keys())
-    reverse_keys = [x for x in sorted_board_hash.keys()].reverse()
+    reverse_keys = sorted([x for x in sorted_board_hash.keys()])
+    reverse_keys.reverse()
 
     # Try to solve the game boards
     solvable = []
     fail_limit = 30
     n_fails = 0
     print("Checking Board Solvability")
-    [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
+    # [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
     sys.stdout.flush()
     t_0 = time.clock()
+    # Retrieve the easiest board we can find...
     for key in sorted(sorted_board_hash.keys()):
         bd_time_0 = time.clock()
         n_fails = 0
         for board in sorted_board_hash[key]:
             if bs.bialostocki_solver(board) == True and bs.a_star_solve(board) == True:
-                print("\nFound a solvable board with {} pegs!".format(key), end="")
-                print("\nNumber of fails: {0}".format(n_fails), end="")
+                print("\nFound a solvable board!", end="")
+                # print("\nNumber of fails: {0}".format(n_fails), end="")
                 solvable.append(board)
                 n_fails = 0
                 break
@@ -292,6 +295,31 @@ def main(frozensets=None):
         bd_time_1 = time.clock()
         print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
         sys.stdout.flush()
+        if len(solvable) >= 1:
+            break
+
+    # Retrieve the hard board now; reverse the order of checked keys
+    for key in reverse_keys:
+        bd_time_0 = time.clock()
+        n_fails = 0
+        for board in sorted_board_hash[key]:
+            if bs.bialostocki_solver(board) == True and bs.a_star_solve(board) == True:
+                print("\nFound a solvable board!", end="")
+                # print("\nNumber of fails: {0}".format(n_fails), end="")
+                solvable.append(board)
+                n_fails = 0
+                break
+            else:
+                n_fails += 1
+            # Break for failing too many boards
+            if (n_fails >= fail_limit):
+                print("|", end="")
+                sys.stdout.flush()
+                n_fails = 0
+                break
+        bd_time_1 = time.clock()
+        # print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
+        sys.stdout.flush()
         if len(solvable) >= 2:
             break
     t_1 = time.clock()
@@ -302,6 +330,9 @@ def main(frozensets=None):
         print("No solvable boards found. Press enter to exit.")
         input()
         exit()
+
+    # Put the more difficult board in random position
+    random.shuffle(solvable)
 
     # Preserve the original board configurations
     originals = copy.deepcopy(solvable)

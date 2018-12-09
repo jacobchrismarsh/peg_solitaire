@@ -247,7 +247,7 @@ def a_star_solve(board: PegSolitaire) -> bool:
         end = time.time()
 
         # Move on to the next board if it takes too long to solve this puzzle
-        if end - start >= 15:
+        if end - start >= 17:
             print(".", end="")
             sys.stdout.flush()
             return False

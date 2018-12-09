@@ -274,7 +274,7 @@ def main(frozensets=None):
         for board in sorted_board_hash[key]:
             if bs.bialostocki_solver(board) == True and bs.a_star_solve(board) == True:
                 print("\nFound a solvable board with {} pegs!".format(key), end="")
-                print("\nNumber of fails: {0}".format(n_fails), end="")
+                # print("\nNumber of fails: {0}".format(n_fails), end="")
                 solvable.append(board)
                 n_fails = 0
                 break
