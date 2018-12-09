@@ -261,6 +261,8 @@ def main(frozensets=None):
 
     # Try to solve the game boards
     solvable = []
+    fail_limit = 75
+    n_fails = 0
     # print("Generating {} Boards".format(len(sorted_board_hash.keys())))
     print("Checking Board Solvability")
     [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
@@ -270,8 +272,18 @@ def main(frozensets=None):
         bd_time_0 = time.clock()
         for board in sorted_board_hash[key]:
             if bs.a_star_solve(board) == True:
-                print("Found a solvable board with {} pegs!".format(key))
+                print("\nFound a solvable board with {} pegs!".format(key))
+                print("Number of fails: {0}".format(n_fails), end="")
                 solvable.append(board)
+                n_fails = 0
+                break
+            else:
+                n_fails += 1
+            # Break for failing too many boards
+            if (n_fails >= fail_limit):
+                print("|", end="")
+                sys.stdout.flush()
+                n_fails = 0
                 break
         bd_time_1 = time.clock()
         print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
