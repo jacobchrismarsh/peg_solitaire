@@ -38,4 +38,4 @@ if __name__ == "__main__":
         psg.main(shapeList)
     else:
         print("DEBUG: Doing board comparison...")
-        bcomp.main(shapeList)
+        bcomp.main(shapeList, cmp=sys.argv[2])

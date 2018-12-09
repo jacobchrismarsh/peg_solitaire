@@ -24,6 +24,7 @@ import sys
 import time
 import copy
 import random
+import json
 # import tty
 
 from pprint import pprint, pformat
@@ -236,7 +237,7 @@ def makeTestBoards(board_list):
     return board_list
 
 
-def main(frozensets=None):
+def main(frozensets=None, cmp=1):
     # Reference the global variable N_SQ
     global N_SQ
 
@@ -260,21 +261,31 @@ def main(frozensets=None):
         else:
             sorted_board_hash[peg_count].append(board)
 
-    # Try to place the hardest board given our declared ASP stuff
-    hardest_key = max(sorted_board_hash.keys())
-    reverse_keys = sorted([x for x in sorted_board_hash.keys()])
-    reverse_keys.reverse()
+    # Work on getting the keys correctly ordered and old boards loaded
+    key_list = sorted([x for i, x in enumerate(sorted_board_hash.keys()) if i < min(12, len(sorted_board_hash.keys()))])
+    old_board = None
+    if (cmp == '1'):
+        # Try to place the hardest board given our declared ASP stuff
+        key_list.reverse()
+    elif (cmp == '2'):
+        # Here we need to read in the old board from the file
+        print("Hello messy code!")
+        with open('peg_board', 'r') as f:
+            text = f.readline().strip()
+            json_load = json.loads(text)
+            print(json_load)
+            old_board = bs.PegSolitaire(None, json_load)
 
     # Try to solve the game boards
     solvable = []
     fail_limit = 30
     n_fails = 0
     print("Checking Board Solvability")
-    # [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
+    [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
     sys.stdout.flush()
     t_0 = time.clock()
     # Retrieve the easiest board we can find...
-    for key in sorted(sorted_board_hash.keys()):
+    for key in key_list:
         bd_time_0 = time.clock()
         n_fails = 0
         for board in sorted_board_hash[key]:
@@ -282,7 +293,6 @@ def main(frozensets=None):
                 print("\nFound a solvable board!", end="")
                 # print("\nNumber of fails: {0}".format(n_fails), end="")
                 solvable.append(board)
-                n_fails = 0
                 break
             else:
                 n_fails += 1
@@ -290,37 +300,11 @@ def main(frozensets=None):
             if (n_fails >= fail_limit):
                 print("|", end="")
                 sys.stdout.flush()
-                n_fails = 0
                 break
         bd_time_1 = time.clock()
-        print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
+        print("\nBoard Check took {0} seconds.".format(bd_time_1 - bd_time_0))
         sys.stdout.flush()
         if len(solvable) >= 1:
-            break
-
-    # Retrieve the hard board now; reverse the order of checked keys
-    for key in reverse_keys:
-        bd_time_0 = time.clock()
-        n_fails = 0
-        for board in sorted_board_hash[key]:
-            if bs.bialostocki_solver(board) == True and bs.a_star_solve(board) == True:
-                print("\nFound a solvable board!", end="")
-                # print("\nNumber of fails: {0}".format(n_fails), end="")
-                solvable.append(board)
-                n_fails = 0
-                break
-            else:
-                n_fails += 1
-            # Break for failing too many boards
-            if (n_fails >= fail_limit):
-                print("|", end="")
-                sys.stdout.flush()
-                n_fails = 0
-                break
-        bd_time_1 = time.clock()
-        # print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
-        sys.stdout.flush()
-        if len(solvable) >= 2:
             break
     t_1 = time.clock()
 
@@ -331,7 +315,14 @@ def main(frozensets=None):
         input()
         exit()
 
-    # Put the more difficult board in random position
+    if old_board is None:
+        # Serialize the data out to a file
+        with open('peg_board', 'w') as f:
+            f.write(json.dumps(solvable[0].board))
+        exit()
+    
+    # Add the previously generated board into the list and shuffle the two boards; want random ordering
+    solvable.append(old_board)
     random.shuffle(solvable)
 
     # Preserve the original board configurations
