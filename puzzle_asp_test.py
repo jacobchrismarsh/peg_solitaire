@@ -1,3 +1,5 @@
+import clyngor
+clyngor.CLINGO_BIN_PATH = "/usr/local/bin/clingo"
 from clyngor import ASP, solve
 import peg_solitaire_game as psg
 import peg_solitaire_board_cmp as bcomp
@@ -18,17 +20,17 @@ if __name__ == "__main__":
     # Solve using clyngor wrapper; Get the peg atoms from the answer
     count = 0
     maxCount = 1000
-    answers = ASP(sys.argv[1], options="--rand-freq=1 --seed=1", time_limit=5)
+    answers = ASP(sys.argv[1], options="--rand-freq=1 --seed=1")
     shapeList = []
 
-    t_0 = time.clock()
+    t_0 = time.time()
     for answer in answers:
         shapeList.append(answer)
 
         count += 1
         if count >= maxCount:
             break
-    t_1 = time.clock()
+    t_1 = time.time()
 
     print("Created {0} Answer Sets...".format(len(shapeList)))
     print("It took {0} seconds.".format(t_1 - t_0))
