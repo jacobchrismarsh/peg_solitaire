@@ -34,8 +34,6 @@ if __name__ == "__main__":
     print("It took {0} seconds.".format(t_1 - t_0))
 
     if (sys.argv[2] == '0'):
-        print("DEBUG: Doing normal board generation...")
         psg.main(shapeList)
     else:
-        print("DEBUG: Doing board comparison...")
         bcomp.main(shapeList, cmp=sys.argv[2])
