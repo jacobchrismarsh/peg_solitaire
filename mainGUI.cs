@@ -45,36 +45,40 @@ public class mainGUI : MonoBehaviour {
 	}
 
 	public void GenerateButtonClick () {
-		ProcessStartInfo start = new ProcessStartInfo();
 		string aspBoard = ASPMaker();
 		string diffCompResult = "0";
 		UnityEngine.UI.Toggle boardCompToggle = GameObject.Find("DifficultyCmp").GetComponent<UnityEngine.UI.Toggle>();
 
 		if (boardCompToggle.isOn)
 			diffCompResult = "1";
-		// string outputString = "";
-
-        // outputString += string.Format("Difficulty Slider = {0}.\n",
-		// 							  difficultySlider.value);
-		// outputString += string.Format("Adaptive Dropdown = {0}.\n",
-		//                               adapterDropdown.value);
-		// outputString += string.Format("Size = {0} x {0}.\n", 
-		// 						      (int) sizeDropdown.value + MIN_SIZE);
-		// outputString += string.Format("Shape = {0}.\n", shapeDropdown.value);
-		// // outputString += string.Format("Theme = {0}.\n", themeDropdown.value);
-		// debugOut.text = outputString;
 
 		string pythonFile = "C:/Users/Spencer/Desktop/Current_QTR_Doc's/CSC 570/PyGame-Test/puzzle_asp_test.py";
+		ProcessStartInfo start = new ProcessStartInfo();
 		start.FileName = PY_PATH;
 		start.Arguments = string.Format("\"{0}\" \"{1}\" \"{2}\"",
 		                                pythonFile, aspBoard, diffCompResult);
 		start.UseShellExecute = false;
 		start.CreateNoWindow = false;
 		start.RedirectStandardError = true;
+		// UnityEngine.Debug.Log(aspBoard);
 		using (Process process = Process.Start(start)) {
 			using (StreamReader reader = process.StandardError) {
 				string result = reader.ReadToEnd();
 				UnityEngine.Debug.Log(result);
+			}
+		}
+
+		// Run again, but this time read from the file to get the old board
+		if (boardCompToggle.isOn) {
+			aspBoard = ASPMaker();
+			// UnityEngine.Debug.Log(aspBoard);
+			start.Arguments = string.Format("\"{0}\" \"{1}\" \"{2}\"",
+	                                        pythonFile, aspBoard, "2");
+			using (Process process = Process.Start(start)) {
+				using (StreamReader reader = process.StandardError) {
+					string result = reader.ReadToEnd();
+					UnityEngine.Debug.Log(result);
+				}
 			}
 		}
 	}
@@ -134,9 +138,10 @@ public class mainGUI : MonoBehaviour {
 		rules += "ycount(N) :- N = #count { y(X,Y) : dim(X), dim(Y), peg(X,Y), y(X,Y) }.";
 		rules += "zcount(N) :- N = #count { z(X,Y) : dim(X), dim(Y), peg(X,Y), z(X,Y) }.";
 		rules += "nosoln(1) :- A == B, B == C, xcount(A), ycount(B), zcount(C).";
+		rules += "nosoln(2) :- A \\ 2 == B \\ 2, B \\ 2 == C \\ 2, xcount(A), ycount(B), zcount(C).";
 		// rules += "nosoln(5) :- Z == 0, Z = (A; B; C), xcount(A), ycount(B), zcount(C).";
 		rules += ":- dim(X), dim(Y), noneighbor(X,Y,0).";
-		rules += ":- nosoln(1).";
+		rules += ":- nosoln(2).";
 		return rules;
 	}
 
