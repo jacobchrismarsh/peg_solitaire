@@ -42,8 +42,8 @@ GOLD = (255, 215, 0)
 DKGREEN = (0, 100, 0)
 
 # This sets the WIDTH and HEIGHT of each grid location
-WIDTH = 20
-HEIGHT = 20
+WIDTH = 50
+HEIGHT = 50
 
 # This sets the margin between each cell
 MARGIN = 5
@@ -320,7 +320,7 @@ def main(frozensets=None, cmp=1):
         with open('peg_board', 'w') as f:
             f.write(json.dumps(solvable[0].board))
         exit()
-    
+
     # Add the previously generated board into the list and shuffle the two boards; want random ordering
     solvable.append(old_board)
     random.shuffle(solvable)
@@ -390,10 +390,50 @@ def main(frozensets=None, cmp=1):
             for column in range(N_SQ):
                 if grid[row][column] == PEG_NONE:
                     color = DKGREEN
+                    pygame.draw.circle(
+                        screen,
+                        color,
+                        [
+                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                        ],
+                        WIDTH // 2 + 1
+                    )
+                    color = BLACK
+                    pygame.draw.circle(
+                        screen,
+                        color,
+                        [
+                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                        ],
+                        WIDTH // 2 - 4
+                    )
+                    continue
                 elif grid[row][column] == PEG_EXIST:
                     color = WHITE
+                    pygame.draw.circle(
+                        screen,
+                        color,
+                        [
+                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                        ],
+                        WIDTH // 2
+                    )
+                    continue
                 elif grid[row][column] == PEG_SELECT:
                     color = BLUE
+                    pygame.draw.circle(
+                        screen,
+                        color,
+                        [
+                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                        ],
+                        WIDTH // 2
+                    )
+                    continue
                 else:
                     color = BLACK
                 pygame.draw.rect(
@@ -420,4 +460,4 @@ def main(frozensets=None, cmp=1):
 
 
 if __name__ == "__main__":
-    main()
+    main(cmp='1')

@@ -27,7 +27,6 @@ import copy
 
 from pprint import pprint, pformat
 from queue import PriorityQueue
-from termcolor import cprint
 from typing import FrozenSet, List, Tuple
 
 # Define some colors
@@ -40,8 +39,8 @@ GOLD = (255, 215, 0)
 DKGREEN = (0, 100, 0)
 
 # This sets the WIDTH and HEIGHT of each grid location
-WIDTH = 20
-HEIGHT = 20
+WIDTH = 50
+HEIGHT = 50
 
 # This sets the margin between each cell
 MARGIN = 5
@@ -365,10 +364,50 @@ def main(frozensets=None):
             for column in range(N_SQ):
                 if grid[row][column] == PEG_NONE:
                     color = DKGREEN
+                    pygame.draw.circle(
+                        screen,
+                        color,
+                        [
+                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                        ],
+                        WIDTH // 2 + 1
+                    )
+                    color = BLACK
+                    pygame.draw.circle(
+                        screen,
+                        color,
+                        [
+                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                        ],
+                        WIDTH // 2 - 4
+                    )
+                    continue
                 elif grid[row][column] == PEG_EXIST:
                     color = WHITE
+                    pygame.draw.circle(
+                        screen,
+                        color,
+                        [
+                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                        ],
+                        WIDTH // 2
+                    )
+                    continue
                 elif grid[row][column] == PEG_SELECT:
                     color = BLUE
+                    pygame.draw.circle(
+                        screen,
+                        color,
+                        [
+                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                        ],
+                        WIDTH // 2
+                    )
+                    continue
                 else:
                     color = BLACK
                 pygame.draw.rect(
