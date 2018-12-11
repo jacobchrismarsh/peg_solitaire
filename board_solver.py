@@ -21,28 +21,12 @@ WALL = 3
 
 X = 0
 Y = 0
+
+BOARD_SOLVE_TIME = 75
 # Define new types for this file
 BoardSet = FrozenSet[Tuple[str, Tuple[int, int]]]
-CompleteBoard = List[List[str]]
+CompleteBoard = List[List[int]]
 
-########################################################################################
-########################################################################################
-########################################################################################
-
-# class _Getch:
-#     def __call__(self):
-#             fd = sys.stdin.fileno()
-#             old_settings = termios.tcgetattr(fd)
-#             try:
-#                 tty.setraw(sys.stdin.fileno())
-#                 ch = sys.stdin.read(3)
-#             finally:
-#                 termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-#             return ch
-
-########################################################################################
-########################################################################################
-########################################################################################
 
 class PegSolitaire:
     def __init__(self, instructions: BoardSet, finished_board: CompleteBoard = None):
@@ -53,6 +37,7 @@ class PegSolitaire:
             self.width = len(finished_board[0]) - 1
             self.height = len(finished_board) - 1
             self.board = finished_board
+            self.reverse_board = [row[::-1] for row in self.board[::-1]]
 
         # Else go throught the frozenset and put things together
         else:
@@ -83,6 +68,10 @@ class PegSolitaire:
             self.width = width - 1
             self.height = height - 1
             self.board = board
+            # Create an exact replica of the board in reverse
+            self.reverse_board = [row[::-1] for row in self.board[::-1]]
+            self.forward_solve_time = 0
+            self.backward_solve_time = 0
 
 ########################################################################################
 
@@ -169,16 +158,17 @@ class PegSolitaire:
         """ Returns the total amount of remaining pegs. This is used as a heuristic
             for checking if the board is solvable
         """
-        pegs = 0
+        peg_count = 0
         for row in self.board:
             for spot in row:
                 if spot == PEG:
-                    pegs += 1
-        return pegs
+                    peg_count += 1
+        return peg_count
 
 ########################################################################################
 
     def _find_holes(self) -> List[Tuple[int, int]]:
+        """ Will traverse through a game board a return a list of all the holes """
         holes = []
 
         # Go through entire board
@@ -216,6 +206,28 @@ class PegSolitaire:
         return moves
 
 ########################################################################################
+
+    def _find_moves_around_hole_reverse(self, x: int, y: int) -> int:
+        """ A near-exact replica of _find_moves_around_hole, except it checks all the
+            moves in reverse order of the aforementioned function
+        """
+        moves = []
+
+        if x <= (self.height - 2):  # Check pins below
+            if self.board[x + 1][y] == PEG and self.board[x + 2][y] == PEG:
+                moves.append((x + 2, y, x, y))
+        if x >= 2:  # Check pins above
+            if self.board[x - 1][y] == PEG and self.board[x - 2][y] == PEG:
+                moves.append((x - 2, y, x, y))
+        if y >= 2:  # Check pins to the left
+            if self.board[x][y - 1] == PEG and self.board[x][y - 2] == PEG:
+                moves.append((x, y - 2, x, y))
+        if y <= (self.width - 2):  # Check pins to the right
+            if self.board[x][y + 1] == PEG and self.board[x][y + 2] == PEG:
+                moves.append((x, y + 2, x, y))
+        return moves
+
+########################################################################################
 ########################################################################################
 ########################################################################################
 
@@ -223,7 +235,7 @@ def process_frozen_sets(input_file: str) -> BoardSet:
     boards = []
 
     with open(input_file) as f:
-        lines = f.readlines()[0::2]  # Grab every other line from start to EOF
+        lines = f.readlines()  # Grab every other line from start to EOF
 
         # Go through each string and convert it to a frozenset
         for line in lines:
@@ -247,9 +259,9 @@ def a_star_solve(board: PegSolitaire) -> bool:
         end = time.time()
 
         # Move on to the next board if it takes too long to solve this puzzle
-        if end - start >= 17:
-            print(".", end="")
-            sys.stdout.flush()
+        if end - start >= BOARD_SOLVE_TIME:
+            # print(".", end="")
+            # sys.stdout.flush()
             return False
 
         # Get a board and all its available moves.
@@ -263,8 +275,8 @@ def a_star_solve(board: PegSolitaire) -> bool:
         if len(moves) == 0:
             # Congrats! You found a board that can be solved!
             if curr_board.pegs_remaining() == 1:
-                print("!", end="")
-                sys.stdout.flush()
+                # print("!", end="")
+                # sys.stdout.flush()
                 return True
             continue
 
@@ -316,106 +328,53 @@ def bialostocki_solver(board: PegSolitaire) -> bool:
         return False
     return True
 
-def print_board(board: PegSolitaire) -> None:
-    """ Will print out the game board.
-        - The outside borders will be blue
-        - The inside structure will be green
-        - The pegs will be yellow if the player is not on them, red otherwise
-        - The walls will be black if the player is not on them, red otherwise
-        - The holes will be empty if the player is not on them, red circle otherwise
-    """
-
-    # Top border
-    cprint("+", "blue", end="", attrs=["bold"])
-    for _ in range(len(board.board[0])):
-        cprint("---+", "blue", end="", attrs=["bold"])
-
-    for i, row in enumerate(board.board):
-        # Left-most side wall
-        cprint("\n|", "blue", end="", attrs=["bold"])
-
-        for j, spot in enumerate(row):
-            # Printing the walls, pegs, and holes
-            if spot == PEG:
-                if i == X and j == Y:
-                    cprint(" {} ".format(PEG), "red", end="", attrs=["bold"])
-                else:
-                    cprint(" {} ".format(PEG), "yellow", end="", attrs=["bold"])
-
-            elif spot == WALL:
-                if i == X and j == Y:
-                    cprint("{}".format(WALL * 3), "red", end="")
-                else:
-                    cprint("{}".format(WALL * 3), "grey", end="")
-            else:
-                if i == X and j == Y:
-                    cprint(" H ", "red", end="")
-                else:
-                    print("   ", end="")
-
-            # Print out the inner walls in green, and the right-most wall blue
-            if j != len(row) - 1:
-                cprint("|", "green", end="", attrs=["bold"])
-            else:
-                cprint("|", "blue", end="", attrs=["bold"])
-        print("\n", end="")
-
-        # Horizontal inner divididing lines
-        if i != len(row) - 1:
-            for _ in range(len(row)):
-                cprint("+---", "green", end="", attrs=["bold"])
-            cprint("+", "blue", end="", attrs=["bold"])
-
-    # Bottom Border
-    cprint("+", "blue", end="", attrs=["bold"])
-    for _ in range(len(board.board[0])):
-        cprint("---+", "blue", end="", attrs=["bold"])
-    print()
-    return
-
-########################################################################################
-
-# def start_game(board: PegSolitaire) -> None:
-#     while(True):
-#         os.system("clear")
-#         print_board(board)
-#         get(board)
-
-########################################################################################
-
-# def get(board: PegSolitaire): #     global X
-#     global Y
-#     inkey = _Getch()
-#     while(True):
-#             k = inkey()
-#             if k != '':
-#                 break
-#     if k=='\x1b[A':
-#         X = max(0, X-1) #up
-#     elif k=='\x1b[B':
-#         X = min(board.width, X+1) #down
-#     elif k=='\x1b[C':
-#         Y = min(board.width, Y+1) #right
-#     elif k=='\x1b[D':
-#         Y = max(0, Y-1) #left
-#     else:
-#         exit(1)
-#         print("not an arrow key!")
-
 ########################################################################################
 
 def main():
-    return
-    # fzs = process_frozen_sets(sys.argv[1])
-    # boards = []
-    # for i, fz in enumerate(fzs):
-    #     boards.append(PegSolitaire(fz))
+    fzs = process_frozen_sets(sys.argv[1])
+    boards = []
+    for i, fz in enumerate(fzs):
+        boards.append(PegSolitaire(fz))
 
-    # solvable = []
-    # for i, board in enumerate(boards[:10]):
-    #     print("Board {}".format(i))
-    #     if a_star_solve(board) == True:
-    #         start_game(board)
+    solvable = []
+    output = open(sys.argv[1][:-4] + "_solvable.txt", "w")
+    for i, board in enumerate(boards):
+        if len(solvable) == 20:
+            break
+        print("Board {}".format(i))
+
+        # Attempt to solve the board, keeping track of how long it takes
+        start = time.time()
+        if a_star_solve(board) == True:
+            end = time.time()
+            # Remember how long it takes to solve from the top left
+            board.forward_solve_time = end - start;
+            print("Board {} is solvable from top left".format(i))
+
+            # Now reverse the board so that you can solve from the bottom right
+            temp = board.copy()
+            temp.board = temp.reverse_board
+
+            # Try to solve the same board from the bottom right, keeping track of how
+            # long it takes
+            start = time.time()
+            if a_star_solve(temp) == True:
+                end = time.time()
+
+                # Remember how long it takes to solve from the bottom right
+                board.backward_solve_time = end - start
+
+                solvable.append(board)
+
+                print("Board {} is solvable from bottom right".format(i))
+
+                # Write the successful board to an output file
+                output.write("{}\n{} {}\n".format(
+                        str(fzs[i]) + "\n",
+                        board.forward_solve_time,
+                        board.backward_solve_time,
+                    )
+                )
 
 
             # f = open("success/successfull_boards_ascii_{}.txt".format(i), "w")
@@ -431,7 +390,6 @@ def main():
 
     # print(solvable)
     # print("Total solvable puzzles: {}".format(len(solvable)))
-
 
 
 if __name__ == "__main__":
