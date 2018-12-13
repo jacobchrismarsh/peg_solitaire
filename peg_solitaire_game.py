@@ -20,6 +20,8 @@ import board_solver as bs
 import os
 import pygame
 import sys
+import json
+import random
 # import termios
 import time
 import copy
@@ -36,7 +38,7 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (50, 50, 255)
 GOLD = (255, 215, 0)
-DKGREEN = (0, 100, 0)
+DKGREEN = (0, 255, 0)
 
 # This sets the WIDTH and HEIGHT of each grid location
 WIDTH = 50
@@ -113,7 +115,7 @@ class Button:
     # When we update the screen, we need to call the following method
     def drawIcon(self, screen):
         pygame.draw.rect(screen, DKGREEN, self.rect)
-        pygame.draw.polygon(screen, GOLD, self.point_list)
+        pygame.draw.polygon(screen, BLACK, self.point_list)
 
 
 def mouseColorSpace(grid, screen):
@@ -238,66 +240,100 @@ def main(frozensets=None):
     # Reference the global variable N_SQ
     global N_SQ
 
-    # Process a file to get frozen sets
     gameBoards = []
-    if frozensets == None:
-        fzs = bs.process_frozen_sets(sys.argv[1])
-    else:
-        fzs = frozensets
+    diff = ["easy", "med", "hard"]
 
-    for i, fz in enumerate(fzs):
-        gameBoards.append(bs.PegSolitaire(fz))
+    colors = [RED, BLUE, DKGREEN]
+    color_labels = ["RED", "BLUE", "GREEN"]
 
-    # Sort the boards into a hash table where keys are the number of pegs and values
-    # are a list of boards
-    sorted_board_hash = {}
-    for board in gameBoards:
-        peg_count = board.pegs_remaining()
-        if peg_count not in sorted_board_hash:
-            sorted_board_hash[peg_count] = [board]
-        else:
-            sorted_board_hash[peg_count].append(board)
+    # Process a file to get its boards
+    with open(sys.argv[1], "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            gameBoards.append(json.loads(line))
+
+    # Shuffle the game boards and difficulty labels in the same way
+    shuffled_temp = list(zip(gameBoards, diff))
+    random.shuffle(shuffled_temp)
+    gameBoards, diff = zip(*shuffled_temp)
+    gameBoards = [b for b in gameBoards]
+
+    # Shuffle the colors and labels
+    shuffled_temp = list(zip(colors, color_labels))
+    random.shuffle(shuffled_temp)
+    colors, color_labels = zip(*shuffled_temp)
+
+    easy_ind = diff.index("easy")
+    med_ind  = diff.index("med")
+    hard_ind = diff.index("hard")
+    if len(sys.argv) > 2 and sys.argv[2] == "record":
+        with open("recordings.csv", "a") as f:
+            f.write("{},{},{},{},{},{}\n".format(
+                    diff[easy_ind], color_labels[easy_ind],
+                    diff[med_ind], color_labels[med_ind],
+                    diff[hard_ind], color_labels[hard_ind],
+                )
+            )
+
+
+    # if frozensets == None:
+    #     fzs = bs.process_frozen_sets(sys.argv[1])
+    # else:
+    #     fzs = frozensets
+
+    # for i, fz in enumerate(fzs):
+    #     gameBoards.append(bs.PegSolitaire(fz))
+
+    # # Sort the boards into a hash table where keys are the number of pegs and values
+    # # are a list of boards
+    # sorted_board_hash = {}
+    # for board in gameBoards:
+    #     peg_count = board.pegs_remaining()
+    #     if peg_count not in sorted_board_hash:
+    #         sorted_board_hash[peg_count] = [board]
+    #     else:
+    #         sorted_board_hash[peg_count].append(board)
 
     # Try to solve the game boards
-    solvable = []
-    fail_limit = 30
-    n_fails = 0
+    solvable = gameBoards
+    # fail_limit = 30
+    # n_fails = 0
     # print("Generating {} Boards".format(len(sorted_board_hash.keys())))
     print("Checking Board Solvability")
-    [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
-    sys.stdout.flush()
-    t_0 = time.clock()
-    for key in sorted(sorted_board_hash.keys()):
-        bd_time_0 = time.clock()
-        n_fails = 0
-        for board in sorted_board_hash[key]:
-            if bs.bialostocki_solver(board) == True and bs.a_star_solve(board) == True:
-                print("\nFound a solvable board with {} pegs!".format(key), end="")
-                # print("\nNumber of fails: {0}".format(n_fails), end="")
-                solvable.append(board)
-                n_fails = 0
-                break
-            else:
-                n_fails += 1
-            # Break for failing too many boards
-            if (n_fails >= fail_limit):
-                print("|", end="")
-                sys.stdout.flush()
-                n_fails = 0
-                break
-        bd_time_1 = time.clock()
-        print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
-        sys.stdout.flush()
-        if len(solvable) >= 5:
-            break
-    t_1 = time.clock()
+    # [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
+    # sys.stdout.flush()
+    # t_0 = time.clock()
+    # for key in sorted(sorted_board_hash.keys()):
+    #     bd_time_0 = time.clock()
+    #     n_fails = 0
+    #     for board in sorted_board_hash[key]:
+    #         if bs.bialostocki_solver(board) == True and bs.a_star_solve(board) == True:
+    #             print("\nFound a solvable board with {} pegs!".format(key), end="")
+    #             # print("\nNumber of fails: {0}".format(n_fails), end="")
+    #             solvable.append(board)
+    #             n_fails = 0
+    #             break
+    #         else:
+    #             n_fails += 1
+    #         # Break for failing too many boards
+    #         if (n_fails >= fail_limit):
+    #             print("|", end="")
+    #             sys.stdout.flush()
+    #             n_fails = 0
+    #             break
+    #     bd_time_1 = time.clock()
+    #     print("\nBoard Check - key[{0}] took {1} seconds.".format(key, bd_time_1 - bd_time_0))
+    #     sys.stdout.flush()
+    #     if len(solvable) >= 5:
+    #         break
+    # t_1 = time.clock()
 
-    print("Check took {0} seconds".format(t_1 - t_0))
+    # print("Check took {0} seconds".format(t_1 - t_0))
 
-    if len(solvable) == 0:
-        print("No solvable boards found. Press enter to exit.")
-        input()
-        exit()
+    # if len(solvable) == 0:
+    #     print("No solvable boards found. Press enter to exit.")
+    #     input()
+    #     exit()
 
     # Preserve the original board configurations
     originals = copy.deepcopy(solvable)
@@ -363,7 +399,7 @@ def main(frozensets=None):
         for row in range(N_SQ):
             for column in range(N_SQ):
                 if grid[row][column] == PEG_NONE:
-                    color = DKGREEN
+                    color = colors[boardIdx]
                     pygame.draw.circle(
                         screen,
                         color,
