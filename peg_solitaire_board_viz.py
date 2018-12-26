@@ -266,7 +266,7 @@ def main(frozensets=None):
     # sorted_board_hash = {}
     for i, board in enumerate(gameBoards):
         solvable.append(board)
-        if i > 50:
+        if i >= 150:
             break
 
     if len(solvable) == 0:
