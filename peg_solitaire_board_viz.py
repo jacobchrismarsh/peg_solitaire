@@ -252,8 +252,9 @@ def main(frozensets=None):
             for line in lines:
                 if len(line) > 50:
                     fzs.append(eval(line))
-                elif len(line) > 2:
-                    print(line, end="")
+                elif len(line) > 10:
+                    soln_time = [float(x) for x in line.strip().split()]
+                    print(max(soln_time), end="\n")
     else:
         fzs = frozensets
 

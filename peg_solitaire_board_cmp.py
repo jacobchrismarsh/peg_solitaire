@@ -237,7 +237,7 @@ def makeTestBoards(board_list):
     return board_list
 
 
-def main(frozensets=None, cmp=1):
+def main(frozensets=None):
     # Reference the global variable N_SQ
     global N_SQ
 
@@ -251,88 +251,10 @@ def main(frozensets=None, cmp=1):
     for i, fz in enumerate(fzs):
         gameBoards.append(bs.PegSolitaire(fz))
 
-    # Sort the boards into a hash table where keys are the number of pegs and values
-    # are a list of boards
-    sorted_board_hash = {}
-    for board in gameBoards:
-        peg_count = board.pegs_remaining()
-        if peg_count not in sorted_board_hash:
-            sorted_board_hash[peg_count] = [board]
-        else:
-            sorted_board_hash[peg_count].append(board)
-
-    # Work on getting the keys correctly ordered and old boards loaded
-    key_list = sorted([x for i, x in enumerate(sorted_board_hash.keys()) if i < min(12, len(sorted_board_hash.keys()))])
-    old_board = None
-    if (cmp == '1'):
-        # Try to place the hardest board given our declared ASP stuff
-        key_list.reverse()
-    elif (cmp == '2'):
-        # Here we need to read in the old board from the file
-        print("Hello messy code!")
-        with open('peg_board', 'r') as f:
-            text = f.readline().strip()
-            json_load = json.loads(text)
-            print(json_load)
-            old_board = bs.PegSolitaire(None, json_load)
-
-    # Try to solve the game boards
-    solvable = []
-    fail_limit = 30
-    n_fails = 0
-    print("Checking Board Solvability")
-    [print("Key {0} - {1} boards".format(x, len(sorted_board_hash[x]))) for x in sorted_board_hash.keys()]
-    sys.stdout.flush()
-    t_0 = time.clock()
-    # Retrieve the easiest board we can find...
-    for key in key_list:
-        bd_time_0 = time.clock()
-        n_fails = 0
-        for board in sorted_board_hash[key]:
-            if bs.bialostocki_solver(board) == True and bs.a_star_solve(board) == True:
-                print("\nFound a solvable board!", end="")
-                # print("\nNumber of fails: {0}".format(n_fails), end="")
-                solvable.append(board)
-                break
-            else:
-                n_fails += 1
-            # Break for failing too many boards
-            if (n_fails >= fail_limit):
-                print("|", end="")
-                sys.stdout.flush()
-                break
-        bd_time_1 = time.clock()
-        print("\nBoard Check took {0} seconds.".format(bd_time_1 - bd_time_0))
-        sys.stdout.flush()
-        if len(solvable) >= 1:
-            break
-    t_1 = time.clock()
-
-    print("Check took {0} seconds".format(t_1 - t_0))
-
-    if len(solvable) == 0:
-        print("No solvable boards found. Press enter to exit.")
-        input()
-        exit()
-
-    if old_board is None:
-        # Serialize the data out to a file
-        with open('peg_board', 'w') as f:
-            f.write(json.dumps(solvable[0].board))
-        exit()
-
-    # Add the previously generated board into the list and shuffle the two boards; want random ordering
-    solvable.append(old_board)
-    random.shuffle(solvable)
-
-    # Preserve the original board configurations
-    originals = copy.deepcopy(solvable)
+    # TODO - We need to build in Jacob's predetermination of what boards are shown using board colors.
 
     # Grab the number of squares in one row of a game board
-    N_SQ = len(solvable[0][0])
-
-    # gameBoards = makeTestBoards(gameBoards)
-    boardIdx = 0
+    N_SQ = len(gameBoards[0][0])
 
     # Initialize pygame
     pygame.init()
@@ -348,9 +270,6 @@ def main(frozensets=None, cmp=1):
 
     # Set title of screen
     pygame.display.set_caption("Peg Solitaire Puzzles")
-
-    # Loop until the user clicks the close button.
-    done = False
 
     # Used to manage how fast the screen updates
     clock = pygame.time.Clock()
@@ -368,91 +287,107 @@ def main(frozensets=None, cmp=1):
         ],
         True,
     )
+
     button_list = [leftButton, rightButton]
 
-    grid = solvable[boardIdx]
-
     # -------- Main Program Loop -----------
-    while not done:
-        for event in pygame.event.get():  # User did something
-            if event.type == pygame.QUIT:  # If user clicked close
-                done = True  # Flag that we are done so we exit this loop
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                grid, screen = mouseColorSpace(grid, screen)
-                grid, boardIdx = rightButton.update(screen, solvable, originals, boardIdx)
-                grid, boardIdx = leftButton.update(screen, solvable, originals, boardIdx)
+    # Retrieve the easiest board we can find...
+    for i in range(0, len(gameBoards), 2):
+        boardIdx = 0
+        print("{0} game boards".format(len(gameBoards)))
+        print("{0} index".format(i))
+        showBoards = []
+        showBoards.append(gameBoards[i])
+        showBoards.append(gameBoards[i + 1])
 
-        # Set the screen background
-        screen.fill(BLACK)
+        # Preserve the original board configurations
+        originals = copy.deepcopy(showBoards)
+        grid = showBoards[boardIdx]
 
-        # Draw the grid
-        for row in range(N_SQ):
-            for column in range(N_SQ):
-                if grid[row][column] == PEG_NONE:
-                    color = DKGREEN
-                    pygame.draw.circle(
-                        screen,
-                        color,
-                        [
-                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
-                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
-                        ],
-                        WIDTH // 2 + 1
-                    )
-                    color = BLACK
-                    pygame.draw.circle(
-                        screen,
-                        color,
-                        [
-                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
-                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
-                        ],
-                        WIDTH // 2 - 4
-                    )
-                    continue
-                elif grid[row][column] == PEG_EXIST:
-                    color = WHITE
-                    pygame.draw.circle(
-                        screen,
-                        color,
-                        [
-                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
-                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
-                        ],
-                        WIDTH // 2
-                    )
-                    continue
-                elif grid[row][column] == PEG_SELECT:
-                    color = BLUE
-                    pygame.draw.circle(
-                        screen,
-                        color,
-                        [
-                            ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
-                            ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
-                        ],
-                        WIDTH // 2
-                    )
-                    continue
-                else:
-                    color = BLACK
-                pygame.draw.rect(
-                    screen,
-                    color,
-                    [
-                        (MARGIN + WIDTH) * column + MARGIN,
-                        (MARGIN + HEIGHT) * row + MARGIN,
-                        WIDTH,
-                        HEIGHT,
-                    ],
-                )
-        leftButton.drawIcon(screen)
-        rightButton.drawIcon(screen)
-        # Limit to 60 frames per second
-        clock.tick(60)
+        # Loop until the user clicks the close button.
+        done = False
 
-        # Go ahead and update the screen with what we've drawn.
-        pygame.display.flip()
+        while not done:
+            # print("Screen on")
+            for event in pygame.event.get():  # User did something
+                if event.type == pygame.QUIT:  # If user clicked close
+                    done = True  # Flag that we are done so we exit this loop
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    grid, screen = mouseColorSpace(grid, screen)
+                    grid, boardIdx = rightButton.update(screen, showBoards, originals, boardIdx)
+                    grid, boardIdx = leftButton.update(screen, showBoards, originals, boardIdx)
+
+            # Set the screen background
+            screen.fill(BLACK)
+
+            # Draw the grid
+            for row in range(N_SQ):
+                for column in range(N_SQ):
+                    if grid[row][column] == PEG_NONE:
+                        color = DKGREEN
+                        pygame.draw.circle(
+                            screen,
+                            color,
+                            [
+                                ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                                ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                            ],
+                            WIDTH // 2 + 1
+                        )
+                        color = BLACK
+                        pygame.draw.circle(
+                            screen,
+                            color,
+                            [
+                                ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                                ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                            ],
+                            WIDTH // 2 - 4
+                        )
+                        continue
+                    elif grid[row][column] == PEG_EXIST:
+                        color = WHITE
+                        pygame.draw.circle(
+                            screen,
+                            color,
+                            [
+                                ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                                ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                            ],
+                            WIDTH // 2
+                        )
+                        continue
+                    elif grid[row][column] == PEG_SELECT:
+                        color = BLUE
+                        pygame.draw.circle(
+                            screen,
+                            color,
+                            [
+                                ((MARGIN + WIDTH) * column + MARGIN) + WIDTH // 2 + 1,
+                                ((MARGIN + HEIGHT) * row + MARGIN) + WIDTH // 2 + 1,
+                            ],
+                            WIDTH // 2
+                        )
+                        continue
+                    else:
+                        color = BLACK
+                    pygame.draw.rect(
+                        screen,
+                        color,
+                        [
+                            (MARGIN + WIDTH) * column + MARGIN,
+                            (MARGIN + HEIGHT) * row + MARGIN,
+                            WIDTH,
+                            HEIGHT,
+                        ],
+                    )
+            leftButton.drawIcon(screen)
+            rightButton.drawIcon(screen)
+            # Limit to 60 frames per second
+            clock.tick(60)
+
+            # Go ahead and update the screen with what we've drawn.
+            pygame.display.flip()
 
     # Be IDLE friendly. If you forget this line, the program will 'hang'
     # on exit.
@@ -460,4 +395,4 @@ def main(frozensets=None, cmp=1):
 
 
 if __name__ == "__main__":
-    main(cmp='1')
+    main()
