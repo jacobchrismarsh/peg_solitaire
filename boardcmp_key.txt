@@ -1,0 +1,7 @@
+Easy: 1-3
+Medium: 4-6
+Hard: 7-9
+
+boardset_diffcmp1.txt: 1, 9
+boardset_diffcmp2.txt: 3, 7
+boardset_diffcmp3.txt: 2, 6

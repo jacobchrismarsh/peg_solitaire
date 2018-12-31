@@ -243,6 +243,11 @@ def main(frozensets=None):
 
     # Process a file to get frozen sets
     gameBoards = []
+    diff = ["easier", "harder"]
+
+    colors = [RED, BLUE]
+    color_labels = ["RED", "BLUE"]
+
     if frozensets == None:
         fzs = bs.process_frozen_sets(sys.argv[1])
     else:
@@ -251,14 +256,17 @@ def main(frozensets=None):
     for i, fz in enumerate(fzs):
         gameBoards.append(bs.PegSolitaire(fz))
 
+    # Shuffle the game boards and difficulty labels in the same way
+    shuffled_temp = list(zip(gameBoards, diff))
+    random.shuffle(shuffled_temp)
+    gameBoards, diff = zip(*shuffled_temp)
+    gameBoards = [b for b in gameBoards]
+
     # TODO - We need to build in Jacob's predetermination of what boards are shown using board colors.
     boardIdx = 0
-    showBoards = []
-    showBoards.append(gameBoards[0])
-    showBoards.append(gameBoards[1])
 
     # Preserve the original board configurations
-    originals = copy.deepcopy(showBoards)
+    originals = copy.deepcopy(gameBoards)
 
     # Grab the number of squares in one row of a game board
     N_SQ = len(gameBoards[0][0])
@@ -296,7 +304,7 @@ def main(frozensets=None):
     )
 
     button_list = [leftButton, rightButton]
-    grid = showBoards[boardIdx]
+    grid = gameBoards[boardIdx]
 
     # Loop until the user clicks the close button.
     done = False
