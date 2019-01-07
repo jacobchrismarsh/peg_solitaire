@@ -263,6 +263,7 @@ def main(frozensets=None):
     gameBoards = [b for b in gameBoards]
 
     # TODO - We need to build in Jacob's predetermination of what boards are shown using board colors.
+    # TODO - Need 'record' keyword for checking which board was considered harder
     boardIdx = 0
 
     # Preserve the original board configurations
